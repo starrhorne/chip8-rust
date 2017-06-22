@@ -1,6 +1,7 @@
 extern crate sdl2;
 mod drivers;
-use drivers::display::DisplayDriver;
+use drivers::DisplayDriver;
+use drivers::AudioDriver;
 
 const CHIP8_WIDTH: u32 = 64;
 const CHIP8_HEIGHT: u32 = 32;
@@ -9,7 +10,8 @@ const CHIP8_HEIGHT: u32 = 32;
 fn main() {
     let sdl_context = sdl2::init().unwrap();
 
-    let mut driver = DisplayDriver::new(&sdl_context);
+    let mut display_driver = DisplayDriver::new(&sdl_context);
+    let audio_driver = AudioDriver::new(&sdl_context);
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
@@ -20,9 +22,15 @@ fn main() {
         }
     }
 
-    driver.draw(&pixels);
+    display_driver.draw(&pixels);
 
-    std::thread::sleep(std::time::Duration::from_secs(4));
+
+
+    audio_driver.start_beep();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    audio_driver.stop_beep();
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
 }
 
