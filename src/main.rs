@@ -2,7 +2,7 @@ extern crate sdl2;
 mod drivers;
 use drivers::DisplayDriver;
 use drivers::AudioDriver;
-use drivers::KeyboardDriver;
+use drivers::InputDriver;
 
 const CHIP8_WIDTH: u32 = 64;
 const CHIP8_HEIGHT: u32 = 32;
@@ -13,11 +13,18 @@ fn main() {
 
     let mut display_driver = DisplayDriver::new(&sdl_context);
     let audio_driver = AudioDriver::new(&sdl_context);
-    let mut keyboard_driver = KeyboardDriver::new(&sdl_context);
+    let mut input_driver = InputDriver::new(&sdl_context);
 
-    keyboard_driver.poll();
+    loop {
+        match input_driver.poll() {
+            Ok(v) => {
+                println!("{:?}", v);
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            },
+            Err(_) => break,
+        }
+    }
 
-    std::thread::sleep(std::time::Duration::from_millis(500));
 
     let mut pixels = [[0 as u8; CHIP8_WIDTH as usize]; CHIP8_HEIGHT as usize];
     for y in 0..CHIP8_HEIGHT {
@@ -35,4 +42,6 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_secs(2));
 
 }
+
+
 
