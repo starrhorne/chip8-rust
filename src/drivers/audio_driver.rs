@@ -2,7 +2,7 @@ use sdl2;
 use sdl2::audio::{AudioDevice, AudioCallback, AudioSpecDesired};
 
 pub struct AudioDriver {
-    device: AudioDevice<SquareWave>
+    device: AudioDevice<SquareWave>,
 }
 
 impl AudioDriver {
@@ -11,25 +11,25 @@ impl AudioDriver {
 
         let desired_spec = AudioSpecDesired {
             freq: Some(44100),
-            channels: Some(1),  // mono
-            samples: None       // default sample size
+            channels: Some(1), // mono
+            samples: None, // default sample size
         };
 
-        let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
-            // Show obtained AudioSpec
-            println!("{:?}", spec);
+        let device = audio_subsystem
+            .open_playback(None, &desired_spec, |spec| {
+                // Show obtained AudioSpec
+                println!("{:?}", spec);
 
-            // initialize the audio callback
-            SquareWave {
-                phase_inc: 240.0 / spec.freq as f32,
-                phase: 0.0,
-                volume: 0.25
-            }
-        }).unwrap();
+                // initialize the audio callback
+                SquareWave {
+                    phase_inc: 240.0 / spec.freq as f32,
+                    phase: 0.0,
+                    volume: 0.25,
+                }
+            })
+            .unwrap();
 
-        AudioDriver {
-            device: device,
-        }
+        AudioDriver { device: device }
     }
 
     pub fn start_beep(&self) {
@@ -46,7 +46,7 @@ impl AudioDriver {
 struct SquareWave {
     phase_inc: f32,
     phase: f32,
-    volume: f32
+    volume: f32,
 }
 
 impl AudioCallback for SquareWave {
@@ -57,11 +57,9 @@ impl AudioCallback for SquareWave {
         for x in out.iter_mut() {
             *x = match self.phase {
                 0.0...0.5 => self.volume,
-                _ => -self.volume
+                _ => -self.volume,
             };
             self.phase = (self.phase + self.phase_inc) % 1.0;
         }
     }
 }
-
-

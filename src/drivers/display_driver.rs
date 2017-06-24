@@ -14,13 +14,18 @@ const SCREEN_HEIGHT: u32 = CHIP8_HEIGHT * SCALE_FACTOR;
 // const OFF_COLOR: (u8, u8, u8) = (64, 64, 64);
 
 pub struct DisplayDriver {
-    canvas: Canvas<Window>
+    canvas: Canvas<Window>,
 }
 
 impl DisplayDriver {
     pub fn new(sdl_context: &sdl2::Sdl) -> Self {
         let video_subsys = sdl_context.video().unwrap();
-        let window = video_subsys.window("rust-sdl2_gfx: draw line & FPSManager", SCREEN_WIDTH, SCREEN_HEIGHT)
+        let window = video_subsys
+            .window(
+                "rust-sdl2_gfx: draw line & FPSManager",
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT,
+            )
             .position_centered()
             .opengl()
             .build()
@@ -32,24 +37,22 @@ impl DisplayDriver {
         canvas.clear();
         canvas.present();
 
-        DisplayDriver {
-            canvas: canvas,
-        }
+        DisplayDriver { canvas: canvas }
     }
 
-    pub fn draw(&mut self, pixels: &[[u8; CHIP8_WIDTH as usize]; CHIP8_HEIGHT as usize]){
+    pub fn draw(&mut self, pixels: &[[u8; CHIP8_WIDTH as usize]; CHIP8_HEIGHT as usize]) {
         for (y, row) in pixels.iter().enumerate() {
             for (x, &col) in row.iter().enumerate() {
                 let x = (x as u32) * SCALE_FACTOR;
                 let y = (y as u32) * SCALE_FACTOR;
 
                 self.canvas.set_draw_color(color(col));
-                let _ = self.canvas.fill_rect(Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR));
+                let _ = self.canvas
+                    .fill_rect(Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR));
             }
         }
         self.canvas.present();
     }
-
 }
 
 fn color(value: u8) -> pixels::Color {

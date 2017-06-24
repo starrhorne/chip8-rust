@@ -20,7 +20,7 @@ fn main() {
             Ok(v) => {
                 println!("{:?}", v);
                 std::thread::sleep(std::time::Duration::from_millis(500));
-            },
+            }
             Err(_) => break,
         }
     }
@@ -42,6 +42,3 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_secs(2));
 
 }
-
-
-
