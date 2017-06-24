@@ -8,10 +8,8 @@ use CHIP8_WIDTH;
 use CHIP8_HEIGHT;
 
 const SCALE_FACTOR: u32 = 20;
-const SCREEN_WIDTH: u32 = CHIP8_WIDTH * SCALE_FACTOR;
-const SCREEN_HEIGHT: u32 = CHIP8_HEIGHT * SCALE_FACTOR;
-// const ON_COLOR: (u8, u8, u8) = (81, 124, 12);
-// const OFF_COLOR: (u8, u8, u8) = (64, 64, 64);
+const SCREEN_WIDTH: u32 = (CHIP8_WIDTH as u32) * SCALE_FACTOR;
+const SCREEN_HEIGHT: u32 = (CHIP8_HEIGHT as u32) * SCALE_FACTOR;
 
 pub struct DisplayDriver {
     canvas: Canvas<Window>,
@@ -40,7 +38,7 @@ impl DisplayDriver {
         DisplayDriver { canvas: canvas }
     }
 
-    pub fn draw(&mut self, pixels: &[[u8; CHIP8_WIDTH as usize]; CHIP8_HEIGHT as usize]) {
+    pub fn draw(&mut self, pixels: &[[u8; CHIP8_WIDTH]; CHIP8_HEIGHT]) {
         for (y, row) in pixels.iter().enumerate() {
             for (x, &col) in row.iter().enumerate() {
                 let x = (x as u32) * SCALE_FACTOR;
