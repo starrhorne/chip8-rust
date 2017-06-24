@@ -1,15 +1,16 @@
 extern crate sdl2;
 mod drivers;
-mod cpu;
+mod processor;
 
 use drivers::DisplayDriver;
 use drivers::AudioDriver;
 use drivers::InputDriver;
 
-use cpu::Cpu;
+use processor::Processor;
 
 const CHIP8_WIDTH: usize = 64;
 const CHIP8_HEIGHT: usize = 32;
+const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
@@ -19,12 +20,12 @@ fn main() {
     let audio_driver = AudioDriver::new(&sdl_context);
     let mut input_driver = InputDriver::new(&sdl_context);
 
-    let cpu = Cpu::new();
+    let mut processor = Processor::new();
 
     loop {
         match input_driver.poll() {
             Ok(keypad) => {
-                let output = cpu.tick(keypad);
+                let output = processor.tick(&keypad);
                 if output.vram_changed {
                     display_driver.draw(output.vram);
                 }
