@@ -62,7 +62,7 @@ impl Processor {
             (opcode & 0xF000) >> 12 as u8,
         );
 
-        let nnn = (opcode & 0x0FFF);
+        let nnn = opcode & 0x0FFF;
         let kk = (opcode & 0x00FF) as u8;
         let x = nibbles.2 as usize;
         let y = nibbles.1 as usize;
@@ -90,7 +90,7 @@ impl Processor {
             (0x08, _, _, 0x0e) => self.op_8xye(x, y),
             (0x09, _, _, 0x00) => self.op_9xy0(x, y),
             (0x0a, _, _, _) => self.op_annn(nnn),
-            (0x0b, _, _, _) => self.op_annn(nnn),
+            (0x0b, _, _, _) => self.op_bnnn(nnn),
             (0x0c, _, _, _) => self.op_cxkk(x, kk),
             (0x0d, _, _, _) => self.op_dxyn(x, y, n),
             (0x0e, _, 0x09, 0x0e) => self.op_ex9e(x),
