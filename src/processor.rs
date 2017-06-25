@@ -179,3 +179,15 @@ impl Processor {
     // LD Vx, [I]
     fn op_fx65(&self, x: usize) {}
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_initial_state() {
+        let processor = Processor::new();
+        assert_eq!(processor.sp, 0);
+        assert_eq!(processor.stack, [0; 16]);
+    }
+}
