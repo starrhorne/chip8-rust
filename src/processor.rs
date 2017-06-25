@@ -110,7 +110,15 @@ impl Processor {
 
     }
     // CLS
-    fn op_00e0(&mut self) {}
+    fn op_00e0(&mut self) {
+        for y in 0..CHIP8_HEIGHT {
+            for x in 0..CHIP8_WIDTH {
+                self.vram[y][x] = 0;
+            }
+        }
+        self.vram_changed = true;
+    }
+
     // RET
     fn op_00ee(&mut self) {}
     // SYS addr
@@ -191,4 +199,19 @@ mod tests {
         assert_eq!(processor.sp, 0);
         assert_eq!(processor.stack, [0; 16]);
     }
+
+    // CLS
+    fn test_op_00e0() {
+        let mut processor = Processor::new();
+        processor.vram = [[128; CHIP8_WIDTH]; CHIP8_HEIGHT];
+        processor.run_opcode(0x00e0);
+        for y in 0..CHIP8_HEIGHT {
+            for x in 0..CHIP8_WIDTH {
+                assert_eq!(processor.vram[y][x], 0);
+            }
+        }
+    }
+
+
+
 }
