@@ -63,7 +63,7 @@ impl Processor {
             (opcode & 0x000F) as u8,
         );
 
-        let nnn = opcode & 0x0FFF;
+        let nnn = (opcode & 0x0FFF) as usize;
         let kk = (opcode & 0x00FF) as u8;
         let x = nibbles.2 as usize;
         let y = nibbles.1 as usize;
@@ -125,9 +125,18 @@ impl Processor {
     }
 
     // JP addr
-    fn op_1nnn(&mut self, nnn: u16) {}
+    fn op_1nnn(&mut self, nnn: usize) {
+        println!("hello: {:X}", nnn);
+        self.pc = nnn;
+    }
+
     // CALL addr
-    fn op_2nnn(&mut self, nnn: u16) {}
+    fn op_2nnn(&mut self, nnn: usize) {
+        self.stack[self.sp] = self.pc;
+        self.sp += 1;
+        self.pc = nnn;
+    }
+
     // SE Vx, byte
     fn op_3xkk(&mut self, x: usize, kk: u8) {}
     // SNE Vx, byte
@@ -159,9 +168,9 @@ impl Processor {
     // SNE Vx, Vy
     fn op_9xy0(&mut self, x: usize, y: usize) {}
     // LD I, addr
-    fn op_annn(&mut self, nnn: u16) {}
+    fn op_annn(&mut self, nnn: usize) {}
     // JP V0, addr
-    fn op_bnnn(&mut self, nnn: u16) {}
+    fn op_bnnn(&mut self, nnn: usize) {}
     // RND Vx, byte
     fn op_cxkk(&mut self, x: usize, kk: u8) {}
     // DRW Vx, Vy, nibble
@@ -219,12 +228,30 @@ mod tests {
     fn test_op_00ee() {
         let mut processor = Processor::new();
         processor.sp = 5;
-        processor.stack[5] = 0x6666;
+        processor.stack[4] = 0x6666;
         processor.run_opcode(0x00ee);
         assert_eq!(processor.sp, 4);
         assert_eq!(processor.pc, 0x6666);
     }
 
+    // JP
+    #[test]
+    fn test_op_1nnn() {
+        let mut processor = Processor::new();
+        processor.run_opcode(0x1666);
+        assert_eq!(processor.pc, 0x0666);
+    }
+
+    // CALL
+    #[test]
+    fn test_op_2nnn() {
+        let mut processor = Processor::new();
+        processor.pc = 0x400;
+        processor.run_opcode(0x2666);
+        assert_eq!(processor.pc, 0x0666);
+        assert_eq!(processor.sp, 1);
+        assert_eq!(processor.stack[0], 0x400);
+    }
 
 
 }
