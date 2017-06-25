@@ -39,7 +39,6 @@ impl Processor {
     }
 
     pub fn tick(&mut self, keypad: &[bool; 16]) -> OutputState {
-        println!("tick: {:?}", keypad);
         self.vram_changed = false;
         let opcode = self.get_opcode();
         self.run_opcode(opcode);
@@ -56,11 +55,12 @@ impl Processor {
 
     fn run_opcode(&mut self, opcode: u16) {
 
+
         let nibbles = (
-            (opcode & 0x000F) as u8,
-            (opcode & 0x00F0) >> 4 as u8,
-            (opcode & 0x0F00) >> 8 as u8,
             (opcode & 0xF000) >> 12 as u8,
+            (opcode & 0x0F00) >> 8 as u8,
+            (opcode & 0x00F0) >> 4 as u8,
+            (opcode & 0x000F) as u8,
         );
 
         let nnn = opcode & 0x0FFF;
@@ -72,7 +72,6 @@ impl Processor {
         match nibbles { 
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(),
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(),
-            (0x00, _, _, _) => self.op_0nnn(nnn),
             (0x01, _, _, _) => self.op_1nnn(nnn),
             (0x02, _, _, _) => self.op_2nnn(nnn),
             (0x03, _, _, _) => self.op_3xkk(x, kk),
@@ -109,7 +108,7 @@ impl Processor {
         }
 
     }
-    // CLS
+    // CLS: Clear the display.
     fn op_00e0(&mut self) {
         for y in 0..CHIP8_HEIGHT {
             for x in 0..CHIP8_WIDTH {
@@ -119,10 +118,12 @@ impl Processor {
         self.vram_changed = true;
     }
 
-    // RET
-    fn op_00ee(&mut self) {}
-    // SYS addr
-    fn op_0nnn(&mut self, nnn: u16) {}
+    // RET:  Return from a subroutine.
+    fn op_00ee(&mut self) {
+        self.pc = self.stack[self.sp];
+        self.sp -= 1;
+    }
+
     // JP addr
     fn op_1nnn(&mut self, nnn: u16) {}
     // CALL addr
@@ -201,6 +202,7 @@ mod tests {
     }
 
     // CLS
+    #[test]
     fn test_op_00e0() {
         let mut processor = Processor::new();
         processor.vram = [[128; CHIP8_WIDTH]; CHIP8_HEIGHT];
@@ -210,6 +212,17 @@ mod tests {
                 assert_eq!(processor.vram[y][x], 0);
             }
         }
+    }
+
+    // RET
+    #[test]
+    fn test_op_00ee() {
+        let mut processor = Processor::new();
+        processor.sp = 5;
+        processor.stack[5] = 0x6666;
+        processor.run_opcode(0x00ee);
+        assert_eq!(processor.sp, 4);
+        assert_eq!(processor.pc, 0x6666);
     }
 
 
