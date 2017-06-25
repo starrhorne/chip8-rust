@@ -120,8 +120,8 @@ impl Processor {
 
     // RET:  Return from a subroutine.
     fn op_00ee(&mut self) {
-        self.pc = self.stack[self.sp];
         self.sp -= 1;
+        self.pc = self.stack[self.sp];
     }
 
     // JP addr
