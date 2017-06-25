@@ -41,7 +41,8 @@ impl Processor {
     pub fn tick(&mut self, keypad: &[bool; 16]) -> OutputState {
         println!("tick: {:?}", keypad);
         self.vram_changed = false;
-        self.run_opcode(self.get_opcode());
+        let opcode = self.get_opcode();
+        self.run_opcode(opcode);
         OutputState {
             vram: &self.vram,
             vram_changed: self.vram_changed,
@@ -53,7 +54,7 @@ impl Processor {
         (self.ram[self.pc] as u16) << 8 | (self.ram[self.pc + 1] as u16)
     }
 
-    fn run_opcode(&self, opcode: u16) {
+    fn run_opcode(&mut self, opcode: u16) {
 
         let nibbles = (
             (opcode & 0x000F) as u8,
@@ -109,75 +110,75 @@ impl Processor {
 
     }
     // CLS
-    fn op_00e0(&self) {}
+    fn op_00e0(&mut self) {}
     // RET
-    fn op_00ee(&self) {}
+    fn op_00ee(&mut self) {}
     // SYS addr
-    fn op_0nnn(&self, nnn: u16) {}
+    fn op_0nnn(&mut self, nnn: u16) {}
     // JP addr
-    fn op_1nnn(&self, nnn: u16) {}
+    fn op_1nnn(&mut self, nnn: u16) {}
     // CALL addr
-    fn op_2nnn(&self, nnn: u16) {}
+    fn op_2nnn(&mut self, nnn: u16) {}
     // SE Vx, byte
-    fn op_3xkk(&self, x: usize, kk: u8) {}
+    fn op_3xkk(&mut self, x: usize, kk: u8) {}
     // SNE Vx, byte
-    fn op_4xkk(&self, x: usize, kk: u8) {}
+    fn op_4xkk(&mut self, x: usize, kk: u8) {}
     // SE Vx, Vy
-    fn op_5xy0(&self, x: usize, y: usize) {}
+    fn op_5xy0(&mut self, x: usize, y: usize) {}
     // LD Vx, byte
-    fn op_6xkk(&self, x: usize, kk: u8) {}
+    fn op_6xkk(&mut self, x: usize, kk: u8) {}
     // ADD Vx, byte
-    fn op_7xkk(&self, x: usize, kk: u8) {}
+    fn op_7xkk(&mut self, x: usize, kk: u8) {}
     // LD Vx, Vy
-    fn op_8xy0(&self, x: usize, y: usize) {}
+    fn op_8xy0(&mut self, x: usize, y: usize) {}
     // OR Vx, Vy
-    fn op_8xy1(&self, x: usize, y: usize) {}
+    fn op_8xy1(&mut self, x: usize, y: usize) {}
     // AND Vx, Vy
-    fn op_8xy2(&self, x: usize, y: usize) {}
+    fn op_8xy2(&mut self, x: usize, y: usize) {}
     // XOR Vx, Vy
-    fn op_8xy3(&self, x: usize, y: usize) {}
+    fn op_8xy3(&mut self, x: usize, y: usize) {}
     // ADD Vx, Vy
-    fn op_8xy4(&self, x: usize, y: usize) {}
+    fn op_8xy4(&mut self, x: usize, y: usize) {}
     // SUB Vx, Vy
-    fn op_8xy5(&self, x: usize, y: usize) {}
+    fn op_8xy5(&mut self, x: usize, y: usize) {}
     // SHR Vx {, Vy}
-    fn op_8xy6(&self, x: usize, y: usize) {}
+    fn op_8xy6(&mut self, x: usize, y: usize) {}
     // SUBN Vx, Vy
-    fn op_8xy7(&self, x: usize, y: usize) {}
+    fn op_8xy7(&mut self, x: usize, y: usize) {}
     // SHL Vx {, Vy}
-    fn op_8xye(&self, x: usize, y: usize) {}
+    fn op_8xye(&mut self, x: usize, y: usize) {}
     // SNE Vx, Vy
-    fn op_9xy0(&self, x: usize, y: usize) {}
+    fn op_9xy0(&mut self, x: usize, y: usize) {}
     // LD I, addr
-    fn op_annn(&self, nnn: u16) {}
+    fn op_annn(&mut self, nnn: u16) {}
     // JP V0, addr
-    fn op_bnnn(&self, nnn: u16) {}
+    fn op_bnnn(&mut self, nnn: u16) {}
     // RND Vx, byte
-    fn op_cxkk(&self, x: usize, kk: u8) {}
+    fn op_cxkk(&mut self, x: usize, kk: u8) {}
     // DRW Vx, Vy, nibble
-    fn op_dxyn(&self, x: usize, y: usize, n: u8) {}
+    fn op_dxyn(&mut self, x: usize, y: usize, n: u8) {}
     // SKP Vx
-    fn op_ex9e(&self, x: usize) {}
+    fn op_ex9e(&mut self, x: usize) {}
     // SKNP Vx
-    fn op_exa1(&self, x: usize) {}
+    fn op_exa1(&mut self, x: usize) {}
     // LD Vx, DT
-    fn op_fx07(&self, x: usize) {}
+    fn op_fx07(&mut self, x: usize) {}
     // LD Vx, K
-    fn op_fx0a(&self, x: usize) {}
+    fn op_fx0a(&mut self, x: usize) {}
     // LD DT, Vx
-    fn op_fx15(&self, x: usize) {}
+    fn op_fx15(&mut self, x: usize) {}
     // LD ST, Vx
-    fn op_fx18(&self, x: usize) {}
+    fn op_fx18(&mut self, x: usize) {}
     // ADD I, Vx
-    fn op_fx1e(&self, x: usize) {}
+    fn op_fx1e(&mut self, x: usize) {}
     // LD F, Vx
-    fn op_fx29(&self, x: usize) {}
+    fn op_fx29(&mut self, x: usize) {}
     // LD B, Vx
-    fn op_fx33(&self, x: usize) {}
+    fn op_fx33(&mut self, x: usize) {}
     // LD [I], Vx
-    fn op_fx55(&self, x: usize) {}
+    fn op_fx55(&mut self, x: usize) {}
     // LD Vx, [I]
-    fn op_fx65(&self, x: usize) {}
+    fn op_fx65(&mut self, x: usize) {}
 }
 
 #[cfg(test)]
