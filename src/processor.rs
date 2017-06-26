@@ -65,9 +65,9 @@ impl Processor {
 
         let nnn = (opcode & 0x0FFF) as usize;
         let kk = (opcode & 0x00FF) as u8;
-        let x = nibbles.2 as usize;
-        let y = nibbles.1 as usize;
-        let n = nibbles.0 as u8;
+        let x = nibbles.1 as usize;
+        let y = nibbles.2 as usize;
+        let n = nibbles.3 as u8;
 
         match nibbles { 
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(),
