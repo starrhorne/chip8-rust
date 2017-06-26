@@ -216,7 +216,7 @@ mod tests {
     use super::*;
 
     const START_PC: usize = 0xF00;
-    const NOT_SKIPPED_PC: usize = START_PC + OPCODE_SIZE;
+    const NEXT_PC: usize = START_PC + OPCODE_SIZE;
     const SKIPPED_PC: usize = START_PC + (2 * OPCODE_SIZE);
 
     fn build_processor() -> Processor {
@@ -236,16 +236,15 @@ mod tests {
     // CLS
     #[test]
     fn test_op_00e0() {
-        let mut processor = Processor::new();
+        let mut processor = build_processor();
         processor.vram = [[128; CHIP8_WIDTH]; CHIP8_HEIGHT];
-        processor.pc = 0x600;
         processor.run_opcode(0x00e0);
         for y in 0..CHIP8_HEIGHT {
             for x in 0..CHIP8_WIDTH {
                 assert_eq!(processor.vram[y][x], 0);
             }
         }
-        assert_eq!(processor.pc, 0x600 + OPCODE_SIZE);
+        assert_eq!(processor.pc, NEXT_PC);
     }
 
     // RET
@@ -270,12 +269,11 @@ mod tests {
     // CALL
     #[test]
     fn test_op_2nnn() {
-        let mut processor = Processor::new();
-        processor.pc = 0x400;
+        let mut processor = build_processor();
         processor.run_opcode(0x2666);
         assert_eq!(processor.pc, 0x0666);
         assert_eq!(processor.sp, 1);
-        assert_eq!(processor.stack[0], 0x400);
+        assert_eq!(processor.stack[0], START_PC);
     }
 
     // SE VX, byte
@@ -287,7 +285,7 @@ mod tests {
 
         let mut processor = build_processor();
         processor.run_opcode(0x3200);
-        assert_eq!(processor.pc, NOT_SKIPPED_PC);
+        assert_eq!(processor.pc, NEXT_PC);
     }
 
     // SNE VX, byte
@@ -299,7 +297,7 @@ mod tests {
 
         let mut processor = build_processor();
         processor.run_opcode(0x4201);
-        assert_eq!(processor.pc, NOT_SKIPPED_PC);
+        assert_eq!(processor.pc, NEXT_PC);
     }
 
     // SE VX, VY
@@ -311,7 +309,7 @@ mod tests {
 
         let mut processor = build_processor();
         processor.run_opcode(0x5500);
-        assert_eq!(processor.pc, NOT_SKIPPED_PC);
+        assert_eq!(processor.pc, NEXT_PC);
     }
 
     #[test]
