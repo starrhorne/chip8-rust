@@ -145,10 +145,15 @@ impl Processor {
     }
 
 
-    // SNE Vx, byte
-    fn op_4xkk(&mut self, x: usize, kk: u8) {}
+    // SNE Vx, byte. Skip next instruction if Vx != kk.
+    fn op_4xkk(&mut self, x: usize, kk: u8) {
+        self.pc += OPCODE_SIZE * (if self.v[x] != kk { 2 } else { 1 });
+    }
+
     // SE Vx, Vy
-    fn op_5xy0(&mut self, x: usize, y: usize) {}
+    fn op_5xy0(&mut self, x: usize, y: usize) {
+        self.pc += OPCODE_SIZE * (if self.v[x] == self.v[y] { 2 } else { 1 });
+    }
     // LD Vx, byte
     fn op_6xkk(&mut self, x: usize, kk: u8) {}
     // ADD Vx, byte
@@ -269,7 +274,38 @@ mod tests {
         processor.v[5] = 0xfb;
         processor.run_opcode(0x35fb);
         assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
+        processor.pc = 0x400;
+        processor.run_opcode(0x35fc);
+        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
     }
+
+    // SNE VX, byte
+    #[test]
+    fn test_op_4xkk() {
+        let mut processor = Processor::new();
+        processor.pc = 0x400;
+        processor.v[5] = 0xfb;
+        processor.run_opcode(0x45fc);
+        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
+        processor.pc = 0x400;
+        processor.run_opcode(0x45fb);
+        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
+    }
+
+    // SE VX, VY
+    #[test]
+    fn test_op_5xy0() {
+        let mut processor = Processor::new();
+        processor.pc = 0x400;
+        processor.v[5] = 0xfb;
+        processor.v[4] = 0xfb;
+        processor.run_opcode(0x5540);
+        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
+        processor.pc = 0x400;
+        processor.run_opcode(0x5500);
+        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
+    }
+
 
 
 }
