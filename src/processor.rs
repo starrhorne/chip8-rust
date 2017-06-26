@@ -2,6 +2,8 @@ use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
 use CHIP8_RAM;
 
+const OPCODE_SIZE: usize = 2;
+
 pub struct OutputState<'a> {
     pub vram: &'a [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
     pub vram_changed: bool,
@@ -116,6 +118,7 @@ impl Processor {
             }
         }
         self.vram_changed = true;
+        self.pc += OPCODE_SIZE;
     }
 
     // RET:  Return from a subroutine.
@@ -126,7 +129,6 @@ impl Processor {
 
     // JP addr
     fn op_1nnn(&mut self, nnn: usize) {
-        println!("hello: {:X}", nnn);
         self.pc = nnn;
     }
 
@@ -137,8 +139,12 @@ impl Processor {
         self.pc = nnn;
     }
 
-    // SE Vx, byte
-    fn op_3xkk(&mut self, x: usize, kk: u8) {}
+    // SE Vx, byte:  Skip next instruction if Vx = kk.
+    fn op_3xkk(&mut self, x: usize, kk: u8) {
+        self.pc += OPCODE_SIZE * (if self.v[x] == kk { 2 } else { 1 });
+    }
+
+
     // SNE Vx, byte
     fn op_4xkk(&mut self, x: usize, kk: u8) {}
     // SE Vx, Vy
@@ -215,12 +221,14 @@ mod tests {
     fn test_op_00e0() {
         let mut processor = Processor::new();
         processor.vram = [[128; CHIP8_WIDTH]; CHIP8_HEIGHT];
+        processor.pc = 0x600;
         processor.run_opcode(0x00e0);
         for y in 0..CHIP8_HEIGHT {
             for x in 0..CHIP8_WIDTH {
                 assert_eq!(processor.vram[y][x], 0);
             }
         }
+        assert_eq!(processor.pc, 0x600 + OPCODE_SIZE);
     }
 
     // RET
@@ -251,6 +259,16 @@ mod tests {
         assert_eq!(processor.pc, 0x0666);
         assert_eq!(processor.sp, 1);
         assert_eq!(processor.stack[0], 0x400);
+    }
+
+    // SE VX, byte
+    #[test]
+    fn test_op_3xkk() {
+        let mut processor = Processor::new();
+        processor.pc = 0x400;
+        processor.v[5] = 0xfb;
+        processor.run_opcode(0x35fb);
+        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
     }
 
 
