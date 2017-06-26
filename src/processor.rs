@@ -87,7 +87,7 @@ impl Processor {
             (0x08, _, _, 0x03) => self.op_8xy3(x, y),
             (0x08, _, _, 0x04) => self.op_8xy4(x, y),
             (0x08, _, _, 0x05) => self.op_8xy5(x, y),
-            (0x08, _, _, 0x06) => self.op_8xy6(x, y),
+            (0x08, _, _, 0x06) => self.op_8x06(x),
             (0x08, _, _, 0x07) => self.op_8xy7(x, y),
             (0x08, _, _, 0x0e) => self.op_8xye(x, y),
             (0x09, _, _, 0x00) => self.op_9xy0(x, y),
@@ -156,25 +156,73 @@ impl Processor {
     }
 
     // LD Vx, byte
-    fn op_6xkk(&mut self, x: usize, kk: u8) {}
+    fn op_6xkk(&mut self, x: usize, kk: u8) {
+        self.v[x] = kk;
+        self.pc += OPCODE_SIZE;
+    }
+
     // ADD Vx, byte
-    fn op_7xkk(&mut self, x: usize, kk: u8) {}
+    fn op_7xkk(&mut self, x: usize, kk: u8) {
+        self.v[x] += kk;
+        self.pc += OPCODE_SIZE;
+    }
+
     // LD Vx, Vy
-    fn op_8xy0(&mut self, x: usize, y: usize) {}
+    fn op_8xy0(&mut self, x: usize, y: usize) {
+        self.v[x] = self.v[y];
+        self.pc += OPCODE_SIZE;
+    }
+
     // OR Vx, Vy
-    fn op_8xy1(&mut self, x: usize, y: usize) {}
+    fn op_8xy1(&mut self, x: usize, y: usize) {
+        self.v[x] |= self.v[y];
+        self.pc += OPCODE_SIZE;
+    }
+
     // AND Vx, Vy
-    fn op_8xy2(&mut self, x: usize, y: usize) {}
+    fn op_8xy2(&mut self, x: usize, y: usize) {
+        self.v[x] &= self.v[y];
+        self.pc += OPCODE_SIZE;
+    }
+
     // XOR Vx, Vy
-    fn op_8xy3(&mut self, x: usize, y: usize) {}
+    fn op_8xy3(&mut self, x: usize, y: usize) {
+        self.v[x] ^= self.v[y];
+        self.pc += OPCODE_SIZE;
+    }
+
     // ADD Vx, Vy
-    fn op_8xy4(&mut self, x: usize, y: usize) {}
+    fn op_8xy4(&mut self, x: usize, y: usize) {
+        let vx = self.v[x] as u16;
+        let vy = self.v[y] as u16;
+        let result = vx + vy;
+        self.v[x] = result as u8;
+        self.v[0x0f] = if result > 0xFF { 1 } else { 0 };
+        self.pc += OPCODE_SIZE;
+    }
+
     // SUB Vx, Vy
-    fn op_8xy5(&mut self, x: usize, y: usize) {}
+    fn op_8xy5(&mut self, x: usize, y: usize) {
+        self.v[0x0f] = if self.v[x] > self.v[y] { 1 } else { 0 };
+        self.v[x] = self.v[x].wrapping_sub(self.v[y]);
+        self.pc += OPCODE_SIZE;
+    }
+
     // SHR Vx {, Vy}
-    fn op_8xy6(&mut self, x: usize, y: usize) {}
+    fn op_8x06(&mut self, x: usize) {
+        self.v[0x0f] = self.v[x] & 0x01;
+        self.v[x] = self.v[x] >> 1;
+        self.pc += OPCODE_SIZE;
+    }
+
     // SUBN Vx, Vy
-    fn op_8xy7(&mut self, x: usize, y: usize) {}
+    fn op_8xy7(&mut self, x: usize, y: usize) {
+        self.v[0x0f] = if self.v[y] > self.v[x] { 1 } else { 0 };
+        self.v[x] = self.v[y].wrapping_sub(self.v[x]);
+        self.pc += OPCODE_SIZE;
+    }
+
+
     // SHL Vx {, Vy}
     fn op_8xye(&mut self, x: usize, y: usize) {}
     // SNE Vx, Vy
@@ -312,12 +360,95 @@ mod tests {
         assert_eq!(processor.pc, NEXT_PC);
     }
 
+    // LD Vx, byte
     #[test]
-    fn testop_6xkk() {}
+    fn test_op_6xkk() {
+        let mut processor = build_processor();
+        processor.run_opcode(0x65ff);
+        assert_eq!(processor.v[5], 0xff);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+
+    // ADD Vx, byte
+    #[test]
+    fn test_op_7xkk() {
+        let mut processor = build_processor();
+        processor.run_opcode(0x75f0);
+        assert_eq!(processor.v[5], 0xf2);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
 
 
 
+    // LD Vx, Vy
+    #[test]
+    fn test_op_8xy0() {
+        let mut processor = build_processor();
+        processor.run_opcode(0x8050);
+        assert_eq!(processor.v[0], 0x02);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
 
+    fn check_math(v1: u8, v2: u8, op: u16, result: u8, vf: u8) {
+        let mut processor = build_processor();
+        processor.v[0] = v1;
+        processor.v[1] = v2;
+        processor.v[0x0f] = 0;
+        processor.run_opcode(0x8010 + op);
+        assert_eq!(processor.v[0], result);
+        assert_eq!(processor.v[0x0f], vf);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
 
+    // OR Vx, Vy
+    #[test]
+    fn test_op_8xy1() {
+        // 0x0F or 0xF0 == 0xFF
+        check_math(0x0F, 0xF0, 1, 0xFF, 0);
+    }
 
+    // AND Vx, Vy
+    #[test]
+    fn test_op_8xy2() {
+        // 0x0F and 0xFF == 0x0F
+        check_math(0x0F, 0xFF, 2, 0x0F, 0);
+    }
+
+    // XOR Vx, Vy
+    #[test]
+    fn test_op_8xy3() {
+        // 0x0F xor 0xFF == 0xF0
+        check_math(0x0F, 0xFF, 3, 0xF0, 0);
+    }
+
+    // ADD Vx, Vy
+    #[test]
+    fn test_op_8xy4() {
+        check_math(0x0F, 0x0F, 4, 0x1E, 0);
+        check_math(0xFF, 0xFF, 4, 0xFE, 1);
+    }
+
+    // SUB Vx, Vy
+    #[test]
+    fn test_op_8xy5() {
+        check_math(0x0F, 0x01, 5, 0x0E, 1);
+        check_math(0x0F, 0xFF, 5, 0x10, 0);
+    }
+
+    // SHR Vx, Vy
+    #[test]
+    fn test_op_8x06() {
+        // 4 >> 1 == 2
+        check_math(0x04, 0, 6, 0x02, 0);
+        // 5 >> 1 == 2 with carry
+        check_math(0x05, 0, 6, 0x02, 1);
+    }
+
+    // SUBN Vx, Vy
+    #[test]
+    fn test_op_8xy7() {
+        check_math(0x01, 0x0F, 7, 0x0E, 1);
+        check_math(0xFF, 0x0F, 7, 0x10, 0);
+    }
 }
