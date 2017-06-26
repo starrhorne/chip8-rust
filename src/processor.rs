@@ -154,6 +154,7 @@ impl Processor {
     fn op_5xy0(&mut self, x: usize, y: usize) {
         self.pc += OPCODE_SIZE * (if self.v[x] == self.v[y] { 2 } else { 1 });
     }
+
     // LD Vx, byte
     fn op_6xkk(&mut self, x: usize, kk: u8) {}
     // ADD Vx, byte
@@ -214,6 +215,17 @@ impl Processor {
 mod tests {
     use super::*;
 
+    const START_PC: usize = 0xF00;
+    const NOT_SKIPPED_PC: usize = START_PC + OPCODE_SIZE;
+    const SKIPPED_PC: usize = START_PC + (2 * OPCODE_SIZE);
+
+    fn build_processor() -> Processor {
+        let mut processor = Processor::new();
+        processor.pc = START_PC;
+        processor.v = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7];
+        processor
+    }
+
     #[test]
     fn test_initial_state() {
         let processor = Processor::new();
@@ -269,42 +281,44 @@ mod tests {
     // SE VX, byte
     #[test]
     fn test_op_3xkk() {
-        let mut processor = Processor::new();
-        processor.pc = 0x400;
-        processor.v[5] = 0xfb;
-        processor.run_opcode(0x35fb);
-        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
-        processor.pc = 0x400;
-        processor.run_opcode(0x35fc);
-        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
+        let mut processor = build_processor();
+        processor.run_opcode(0x3201);
+        assert_eq!(processor.pc, SKIPPED_PC);
+
+        let mut processor = build_processor();
+        processor.run_opcode(0x3200);
+        assert_eq!(processor.pc, NOT_SKIPPED_PC);
     }
 
     // SNE VX, byte
     #[test]
     fn test_op_4xkk() {
-        let mut processor = Processor::new();
-        processor.pc = 0x400;
-        processor.v[5] = 0xfb;
-        processor.run_opcode(0x45fc);
-        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
-        processor.pc = 0x400;
-        processor.run_opcode(0x45fb);
-        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
+        let mut processor = build_processor();
+        processor.run_opcode(0x4200);
+        assert_eq!(processor.pc, SKIPPED_PC);
+
+        let mut processor = build_processor();
+        processor.run_opcode(0x4201);
+        assert_eq!(processor.pc, NOT_SKIPPED_PC);
     }
 
     // SE VX, VY
     #[test]
     fn test_op_5xy0() {
-        let mut processor = Processor::new();
-        processor.pc = 0x400;
-        processor.v[5] = 0xfb;
-        processor.v[4] = 0xfb;
+        let mut processor = build_processor();
         processor.run_opcode(0x5540);
-        assert_eq!(processor.pc, 0x0400 + (2 * OPCODE_SIZE));
-        processor.pc = 0x400;
+        assert_eq!(processor.pc, SKIPPED_PC);
+
+        let mut processor = build_processor();
         processor.run_opcode(0x5500);
-        assert_eq!(processor.pc, 0x0400 + OPCODE_SIZE);
+        assert_eq!(processor.pc, NOT_SKIPPED_PC);
     }
+
+    #[test]
+    fn testop_6xkk() {}
+
+
+
 
 
 
