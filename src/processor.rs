@@ -244,6 +244,7 @@ impl Processor {
 
             }
         }
+        self.vram_changed = true;
     }
 
     // SKP Vx
@@ -502,6 +503,7 @@ mod tests {
         assert_eq!(processor.vram[1][0], 1);
         assert_eq!(processor.vram[1][1], 0);
         assert_eq!(processor.v[0x0f], 1);
+        assert!(processor.vram_changed);
     }
 
 
