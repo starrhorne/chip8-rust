@@ -26,7 +26,7 @@ fn main() {
     loop {
         match input_driver.poll() {
             Ok(keypad) => {
-                let output = processor.tick(&keypad);
+                let output = processor.tick(keypad);
                 if output.vram_changed {
                     display_driver.draw(output.vram);
                 }

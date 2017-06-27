@@ -24,6 +24,7 @@ pub struct Processor {
     sp: usize,
     delay_timer: u8,
     sound_timer: u8,
+    keypad: [bool; 16],
 }
 
 impl Processor {
@@ -39,13 +40,15 @@ impl Processor {
             sp: 0,
             delay_timer: 0,
             sound_timer: 0,
+            keypad: [false; 16],
         }
     }
 
-    pub fn tick(&mut self, keypad: &[bool; 16]) -> OutputState {
+    pub fn tick(&mut self, keypad: [bool; 16]) -> OutputState {
         self.vram_changed = false;
         let opcode = self.get_opcode();
         self.run_opcode(opcode);
+        self.keypad = keypad;
         OutputState {
             vram: &self.vram,
             vram_changed: self.vram_changed,
@@ -245,22 +248,43 @@ impl Processor {
             }
         }
         self.vram_changed = true;
+        self.pc += OPCODE_SIZE;
     }
 
     // SKP Vx
-    fn op_ex9e(&mut self, x: usize) {}
+    fn op_ex9e(&mut self, x: usize) {
+        let pressed = self.keypad[self.v[x] as usize];
+        self.pc += OPCODE_SIZE * (if pressed { 2 } else { 1 });
+    }
+
     // SKNP Vx
-    fn op_exa1(&mut self, x: usize) {}
+    fn op_exa1(&mut self, x: usize) {
+        let pressed = self.keypad[self.v[x] as usize];
+        self.pc += OPCODE_SIZE * (if !pressed { 2 } else { 1 });
+    }
     // LD Vx, DT
-    fn op_fx07(&mut self, x: usize) {}
+    fn op_fx07(&mut self, x: usize) {
+        self.v[x] = self.delay_timer;
+        self.pc += OPCODE_SIZE;
+    }
     // LD Vx, K
     fn op_fx0a(&mut self, x: usize) {}
+
     // LD DT, Vx
-    fn op_fx15(&mut self, x: usize) {}
+    fn op_fx15(&mut self, x: usize) {
+        self.delay_timer = self.v[x];
+        self.pc += OPCODE_SIZE;
+    }
     // LD ST, Vx
-    fn op_fx18(&mut self, x: usize) {}
+    fn op_fx18(&mut self, x: usize) {
+        self.sound_timer = self.v[x];
+        self.pc += OPCODE_SIZE;
+    }
     // ADD I, Vx
-    fn op_fx1e(&mut self, x: usize) {}
+    fn op_fx1e(&mut self, x: usize) {
+        self.i += self.v[x] as usize;
+        self.pc += OPCODE_SIZE;
+    }
     // LD F, Vx
     fn op_fx29(&mut self, x: usize) {}
     // LD B, Vx
@@ -504,6 +528,7 @@ mod tests {
         assert_eq!(processor.vram[1][1], 0);
         assert_eq!(processor.v[0x0f], 1);
         assert!(processor.vram_changed);
+        assert_eq!(processor.pc, NEXT_PC);
     }
 
 
@@ -551,4 +576,85 @@ mod tests {
         assert_eq!(processor.v[0x0f], 0);
     }
 
+
+    // SKP Vx
+    #[test]
+    fn test_op_ex9e() {
+        let mut processor = build_processor();
+        processor.keypad[9] = true;
+        processor.v[5] = 9;
+        processor.run_opcode(0xe59e);
+        assert_eq!(processor.pc, SKIPPED_PC);
+
+
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.run_opcode(0xe59e);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // SKNP Vx
+    #[test]
+    fn test_op_exa1() {
+        let mut processor = build_processor();
+        processor.keypad[9] = true;
+        processor.v[5] = 9;
+        processor.run_opcode(0xe5a1);
+        assert_eq!(processor.pc, NEXT_PC);
+
+
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.run_opcode(0xe5a1);
+        assert_eq!(processor.pc, SKIPPED_PC);
+    }
+
+    // LD Vx, DT
+    #[test]
+    fn test_op_fx07() {
+        let mut processor = build_processor();
+        processor.delay_timer = 20;
+        processor.run_opcode(0xf507);
+        assert_eq!(processor.v[5], 20);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // LD DT, vX
+    #[test]
+    fn test_op_fx15() {
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.run_opcode(0xf515);
+        assert_eq!(processor.delay_timer, 9);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // LD ST, vX
+    #[test]
+    fn test_op_fx18() {
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.run_opcode(0xf518);
+        assert_eq!(processor.sound_timer, 9);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // ADD I, Vx
+    fn test_op_fx1e() {
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.i = 9;
+        processor.run_opcode(0xf51e);
+        assert_eq!(processor.i, 18);
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // LD F, Vx
+    fn test_op_fx29() {}
+    // LD B, Vx
+    fn test_op_fx33() {}
+    // LD [I], Vx
+    fn test_op_fx55() {}
+    // LD Vx, [I]
+    fn test_op_fx65() {}
 }
