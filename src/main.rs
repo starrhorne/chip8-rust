@@ -1,3 +1,4 @@
+extern crate rand;
 extern crate sdl2;
 mod drivers;
 mod processor;

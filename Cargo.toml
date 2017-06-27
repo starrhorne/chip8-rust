@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Starr Horne <starr@chromahq.com>"]
 
 [dependencies]
+rand = "0.3.15"
 
 [dependencies.sdl2]
 version = "0.30"
