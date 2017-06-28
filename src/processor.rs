@@ -293,13 +293,34 @@ impl Processor {
         self.pc += OPCODE_SIZE;
     }
     // LD F, Vx
-    fn op_fx29(&mut self, x: usize) {}
+    fn op_fx29(&mut self, x: usize) {
+        self.i = (self.v[x] as usize) * 5;
+        self.pc += OPCODE_SIZE;
+    }
+
     // LD B, Vx
-    fn op_fx33(&mut self, x: usize) {}
+    fn op_fx33(&mut self, x: usize) {
+        self.ram[self.i] = self.v[x] / 100;
+        self.ram[self.i + 1] = (self.v[x] % 100) / 10;
+        self.ram[self.i + 2] = self.v[x] % 10;
+        self.pc += OPCODE_SIZE;
+    }
+
     // LD [I], Vx
-    fn op_fx55(&mut self, x: usize) {}
+    fn op_fx55(&mut self, x: usize) {
+        for i in 0..self.v[x] as usize {
+            self.ram[self.i + i] = self.v[i];
+        }
+        self.pc += OPCODE_SIZE;
+    }
+
     // LD Vx, [I]
-    fn op_fx65(&mut self, x: usize) {}
+    fn op_fx65(&mut self, x: usize) {
+        for i in 0..self.v[x] as usize {
+            self.v[i] = self.ram[self.i + i];
+        }
+        self.pc += OPCODE_SIZE;
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -657,6 +678,7 @@ mod tests {
     }
 
     // ADD I, Vx
+    #[test]
     fn test_op_fx1e() {
         let mut processor = build_processor();
         processor.v[5] = 9;
@@ -667,11 +689,58 @@ mod tests {
     }
 
     // LD F, Vx
-    fn test_op_fx29() {}
+    #[test]
+    fn test_op_fx29() {
+        let mut processor = build_processor();
+        processor.v[5] = 9;
+        processor.run_opcode(0xf529);
+        assert_eq!(processor.i, 5 * 9);
+        assert_eq!(processor.pc, NEXT_PC);
+
+    }
+
     // LD B, Vx
-    fn test_op_fx33() {}
+    #[test]
+    fn test_op_fx33() {
+        let mut processor = build_processor();
+        processor.v[5] = 123;
+        processor.i = 1000;
+        processor.run_opcode(0xf533);
+        assert_eq!(processor.ram[1000], 1);
+        assert_eq!(processor.ram[1001], 2);
+        assert_eq!(processor.ram[1002], 3);
+        assert_eq!(processor.pc, NEXT_PC);
+
+    }
+
     // LD [I], Vx
-    fn test_op_fx55() {}
+    #[test]
+    fn test_op_fx55() {
+        let mut processor = build_processor();
+        processor.i = 1000;
+        processor.v[5] = 0x0f;
+        processor.run_opcode(0xf555);
+        for i in 0..0x0f {
+            assert_eq!(processor.ram[1000 + i as usize], processor.v[i]);
+        }
+        assert_eq!(processor.pc, NEXT_PC);
+    }
+
     // LD Vx, [I]
-    fn test_op_fx65() {}
+    #[test]
+    fn test_op_fx65() {
+        let mut processor = build_processor();
+        for i in 0..0x0f as usize {
+            processor.ram[1000 + i] = i as u8;
+        }
+        processor.i = 1000;
+        processor.v[5] = 0x0f;
+        processor.run_opcode(0xf565);
+
+        for i in 0..0x0f as usize {
+            assert_eq!(processor.v[i], processor.ram[1000 + i]);
+        }
+        assert_eq!(processor.pc, NEXT_PC);
+
+    }
 }
