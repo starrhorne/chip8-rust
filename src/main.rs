@@ -10,35 +10,41 @@ use drivers::InputDriver;
 
 use processor::Processor;
 
+use std::thread;
+use std::time::Duration;
+
 const CHIP8_WIDTH: usize = 64;
 const CHIP8_HEIGHT: usize = 32;
 const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
+    let sleep_duration = Duration::from_millis(10);
+
     let sdl_context = sdl2::init().unwrap();
 
-    let mut display_driver = DisplayDriver::new(&sdl_context);
     let audio_driver = AudioDriver::new(&sdl_context);
+    let mut display_driver = DisplayDriver::new(&sdl_context);
     let mut input_driver = InputDriver::new(&sdl_context);
-
     let mut processor = Processor::new();
 
     loop {
         match input_driver.poll() {
             Ok(keypad) => {
+
                 let output = processor.tick(keypad);
+
                 if output.vram_changed {
                     display_driver.draw(output.vram);
                 }
+
                 if output.beep {
                     audio_driver.start_beep();
                 } else {
                     audio_driver.stop_beep();
                 }
 
-                std::thread::sleep(std::time::Duration::from_millis(500));
-
+                thread::sleep(sleep_duration);
             }
             Err(_) => break,
         }
