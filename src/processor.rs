@@ -262,6 +262,7 @@ impl Processor {
     fn op_cxkk(&mut self, x: usize, kk: u8) {
         let mut rng = rand::thread_rng();
         self.v[x] = rng.gen::<u8>() & kk;
+        self.pc += OPCODE_SIZE;
     }
 
     // DRW Vx, Vy, nibble
