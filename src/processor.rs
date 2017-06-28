@@ -1,5 +1,6 @@
 use rand;
 use rand::Rng;
+use font::FONT_SET;
 
 use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
@@ -29,10 +30,16 @@ pub struct Processor {
 
 impl Processor {
     pub fn new() -> Self {
+
+        let mut ram = [0u8; CHIP8_RAM];
+        for i in 0..FONT_SET.len() {
+            ram[i] = FONT_SET[i];
+        }
+
         Processor {
             vram: [[0; CHIP8_WIDTH]; CHIP8_HEIGHT],
             vram_changed: false,
-            ram: [0; CHIP8_RAM],
+            ram: ram,
             stack: [0; 16],
             v: [0; 16],
             i: 0,
@@ -309,8 +316,18 @@ mod tests {
     #[test]
     fn test_initial_state() {
         let processor = Processor::new();
+        assert_eq!(processor.pc, 0x200);
         assert_eq!(processor.sp, 0);
         assert_eq!(processor.stack, [0; 16]);
+        // First char in font: 0
+        assert_eq!(processor.ram[0..5], [0xF0, 0x90, 0x90, 0x90, 0xF0]);
+        // Last char in font: F
+        assert_eq!(
+            processor.ram[FONT_SET.len() - 5..FONT_SET.len()],
+            [0xF0, 0x80, 0xF0, 0x80, 0x80]
+        );
+
+
     }
     // CLS
     #[test]

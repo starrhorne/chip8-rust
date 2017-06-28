@@ -2,6 +2,7 @@ extern crate rand;
 extern crate sdl2;
 mod drivers;
 mod processor;
+mod font;
 
 use drivers::DisplayDriver;
 use drivers::AudioDriver;
