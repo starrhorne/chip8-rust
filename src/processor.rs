@@ -26,6 +26,8 @@ pub struct Processor {
     delay_timer: u8,
     sound_timer: u8,
     keypad: [bool; 16],
+    keypad_waiting: bool,
+    keypad_register: usize,
 }
 
 impl Processor {
@@ -48,14 +50,28 @@ impl Processor {
             delay_timer: 0,
             sound_timer: 0,
             keypad: [false; 16],
+            keypad_waiting: false,
+            keypad_register: 0,
         }
     }
 
     pub fn tick(&mut self, keypad: [bool; 16]) -> OutputState {
-        self.vram_changed = false;
-        let opcode = self.get_opcode();
-        self.run_opcode(opcode);
         self.keypad = keypad;
+        self.vram_changed = false;
+
+        if self.keypad_waiting {
+            for i in 0..keypad.len() {
+                if keypad[i] {
+                    self.keypad_waiting = false;
+                    self.v[self.keypad_register] = i as u8;
+                    break;
+                }
+            }
+        } else {
+            let opcode = self.get_opcode();
+            self.run_opcode(opcode);
+        }
+
         OutputState {
             vram: &self.vram,
             vram_changed: self.vram_changed,
@@ -66,6 +82,7 @@ impl Processor {
     fn get_opcode(&self) -> u16 {
         (self.ram[self.pc] as u16) << 8 | (self.ram[self.pc + 1] as u16)
     }
+
     fn run_opcode(&mut self, opcode: u16) {
         let nibbles = (
             (opcode & 0xF000) >> 12 as u8,
@@ -275,7 +292,11 @@ impl Processor {
         self.pc += OPCODE_SIZE;
     }
     // LD Vx, K
-    fn op_fx0a(&mut self, x: usize) {}
+    fn op_fx0a(&mut self, x: usize) {
+        self.keypad_waiting = true;
+        self.keypad_register = x;
+        self.pc += OPCODE_SIZE;
+    }
 
     // LD DT, Vx
     fn op_fx15(&mut self, x: usize) {
@@ -655,6 +676,31 @@ mod tests {
         processor.run_opcode(0xf507);
         assert_eq!(processor.v[5], 20);
         assert_eq!(processor.pc, NEXT_PC);
+    }
+
+    // LD Vx, K
+    #[test]
+    fn test_op_fx0a() {
+        let mut processor = build_processor();
+        processor.run_opcode(0xf50a);
+        assert_eq!(processor.keypad_waiting, true);
+        assert_eq!(processor.keypad_register, 5);
+        assert_eq!(processor.pc, NEXT_PC);
+
+        // Tick with no keypresses doesn't do anything
+        processor.tick([false; 16]);
+        assert_eq!(processor.keypad_waiting, true);
+        assert_eq!(processor.keypad_register, 5);
+        assert_eq!(processor.pc, NEXT_PC);
+
+        // Tick with a keypress finishes wait and loads
+        // first pressed key into vx
+        processor.tick([true; 16]);
+        assert_eq!(processor.keypad_waiting, false);
+        assert_eq!(processor.v[5], 0);
+        assert_eq!(processor.pc, NEXT_PC);
+
+
     }
 
     // LD DT, vX
