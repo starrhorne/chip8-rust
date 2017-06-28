@@ -68,6 +68,12 @@ impl Processor {
                 }
             }
         } else {
+            if self.delay_timer > 0 {
+                self.delay_timer -= 1
+            }
+            if self.sound_timer > 0 {
+                self.sound_timer -= 1
+            }
             let opcode = self.get_opcode();
             self.run_opcode(opcode);
         }
@@ -788,5 +794,15 @@ mod tests {
         }
         assert_eq!(processor.pc, NEXT_PC);
 
+    }
+
+    #[test]
+    fn test_timers() {
+        let mut processor = build_processor();
+        processor.delay_timer = 200;
+        processor.sound_timer = 100;
+        processor.tick([false; 16]);
+        assert_eq!(processor.delay_timer, 199);
+        assert_eq!(processor.sound_timer, 99);
     }
 }
