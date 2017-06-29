@@ -14,6 +14,22 @@ pub struct OutputState<'a> {
     pub beep: bool,
 }
 
+enum ProgramCounter {
+    Next,
+    Skip,
+    Jump(usize),
+}
+
+impl ProgramCounter {
+    fn skip_if(condition: bool) -> ProgramCounter {
+        if condition {
+            ProgramCounter::Skip
+        } else {
+            ProgramCounter::Next
+        }
+    }
+}
+
 pub struct Processor {
     vram: [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
     vram_changed: bool,
@@ -102,7 +118,7 @@ impl Processor {
         let y = nibbles.2 as usize;
         let n = nibbles.3 as usize;
 
-        match nibbles { 
+        let pc_change = match nibbles { 
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(),
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(),
             (0x01, _, _, _) => self.op_1nnn(nnn),
@@ -137,136 +153,147 @@ impl Processor {
             (0x0f, _, 0x03, 0x03) => self.op_fx33(x),
             (0x0f, _, 0x05, 0x05) => self.op_fx55(x),
             (0x0f, _, 0x06, 0x05) => self.op_fx65(x),
-            _ => return,
+            _ => ProgramCounter::Next,
+        };
+
+        match pc_change {
+            ProgramCounter::Next => self.pc += OPCODE_SIZE,
+            ProgramCounter::Skip => self.pc += 2 * OPCODE_SIZE,
+            ProgramCounter::Jump(addr) => self.pc = addr,
         }
+
+
     }
+
+
     // CLS: Clear the display.
-    fn op_00e0(&mut self) {
+    fn op_00e0(&mut self) -> ProgramCounter {
         for y in 0..CHIP8_HEIGHT {
             for x in 0..CHIP8_WIDTH {
                 self.vram[y][x] = 0;
             }
         }
         self.vram_changed = true;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
+
     }
     // RET:  Return from a subroutine.
-    fn op_00ee(&mut self) {
+    fn op_00ee(&mut self) -> ProgramCounter {
         self.sp -= 1;
-        self.pc = self.stack[self.sp];
+        ProgramCounter::Jump(self.stack[self.sp])
     }
     // JP addr
-    fn op_1nnn(&mut self, nnn: usize) {
-        self.pc = nnn;
+    fn op_1nnn(&mut self, nnn: usize) -> ProgramCounter {
+        ProgramCounter::Jump(nnn)
     }
     // CALL addr
-    fn op_2nnn(&mut self, nnn: usize) {
+    fn op_2nnn(&mut self, nnn: usize) -> ProgramCounter {
         self.stack[self.sp] = self.pc;
         self.sp += 1;
-        self.pc = nnn;
+        ProgramCounter::Jump(nnn)
     }
     // SE Vx, byte:  Skip next instruction if Vx = kk.
-    fn op_3xkk(&mut self, x: usize, kk: u8) {
-        self.pc += OPCODE_SIZE * (if self.v[x] == kk { 2 } else { 1 });
+    fn op_3xkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
+        ProgramCounter::skip_if(self.v[x] == kk)
     }
     // SNE Vx, byte. Skip next instruction if Vx != kk.
-    fn op_4xkk(&mut self, x: usize, kk: u8) {
-        self.pc += OPCODE_SIZE * (if self.v[x] != kk { 2 } else { 1 });
+    fn op_4xkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
+        ProgramCounter::skip_if(self.v[x] != kk)
     }
     // SE Vx, Vy
-    fn op_5xy0(&mut self, x: usize, y: usize) {
-        self.pc += OPCODE_SIZE * (if self.v[x] == self.v[y] { 2 } else { 1 });
+    fn op_5xy0(&mut self, x: usize, y: usize) -> ProgramCounter {
+        ProgramCounter::skip_if(self.v[x] == self.v[y])
     }
     // LD Vx, byte
-    fn op_6xkk(&mut self, x: usize, kk: u8) {
+    fn op_6xkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
         self.v[x] = kk;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // ADD Vx, byte
-    fn op_7xkk(&mut self, x: usize, kk: u8) {
+    fn op_7xkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
         self.v[x] += kk;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // LD Vx, Vy
-    fn op_8xy0(&mut self, x: usize, y: usize) {
+    fn op_8xy0(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[x] = self.v[y];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // OR Vx, Vy
-    fn op_8xy1(&mut self, x: usize, y: usize) {
+    fn op_8xy1(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[x] |= self.v[y];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // AND Vx, Vy
-    fn op_8xy2(&mut self, x: usize, y: usize) {
+    fn op_8xy2(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[x] &= self.v[y];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // XOR Vx, Vy
-    fn op_8xy3(&mut self, x: usize, y: usize) {
+    fn op_8xy3(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[x] ^= self.v[y];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // ADD Vx, Vy
-    fn op_8xy4(&mut self, x: usize, y: usize) {
+    fn op_8xy4(&mut self, x: usize, y: usize) -> ProgramCounter {
         let vx = self.v[x] as u16;
         let vy = self.v[y] as u16;
         let result = vx + vy;
         self.v[x] = result as u8;
         self.v[0x0f] = if result > 0xFF { 1 } else { 0 };
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // SUB Vx, Vy
-    fn op_8xy5(&mut self, x: usize, y: usize) {
+    fn op_8xy5(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[0x0f] = if self.v[x] > self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[x].wrapping_sub(self.v[y]);
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // SHR Vx {, Vy}
-    fn op_8x06(&mut self, x: usize) {
+    fn op_8x06(&mut self, x: usize) -> ProgramCounter {
         self.v[0x0f] = self.v[x] & 0x01;
         self.v[x] = self.v[x] >> 1;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // SUBN Vx, Vy
-    fn op_8xy7(&mut self, x: usize, y: usize) {
+    fn op_8xy7(&mut self, x: usize, y: usize) -> ProgramCounter {
         self.v[0x0f] = if self.v[y] > self.v[x] { 1 } else { 0 };
         self.v[x] = self.v[y].wrapping_sub(self.v[x]);
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // SHL Vx {, Vy}
-    fn op_8x0e(&mut self, x: usize) {
+    fn op_8x0e(&mut self, x: usize) -> ProgramCounter {
         self.v[0x0f] = (self.v[x] & 0b10000000) >> 7;
         self.v[x] = self.v[x] << 1;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
 
     // SNE Vx, Vy
-    fn op_9xy0(&mut self, x: usize, y: usize) {
-        self.pc += OPCODE_SIZE * (if self.v[x] != self.v[y] { 2 } else { 1 });
+    fn op_9xy0(&mut self, x: usize, y: usize) -> ProgramCounter {
+        ProgramCounter::skip_if(self.v[x] != self.v[y])
     }
 
     // LD I, addr
-    fn op_annn(&mut self, nnn: usize) {
+    fn op_annn(&mut self, nnn: usize) -> ProgramCounter {
         self.i = nnn;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // JP V0, addr
-    fn op_bnnn(&mut self, nnn: usize) {
-        self.pc = (self.v[0] as usize) + nnn;
+    fn op_bnnn(&mut self, nnn: usize) -> ProgramCounter {
+        ProgramCounter::Jump((self.v[0] as usize) + nnn)
     }
 
     // RND Vx, byte
-    fn op_cxkk(&mut self, x: usize, kk: u8) {
+    fn op_cxkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
         let mut rng = rand::thread_rng();
         self.v[x] = rng.gen::<u8>() & kk;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // DRW Vx, Vy, nibble
-    fn op_dxyn(&mut self, x: usize, y: usize, n: usize) {
+    fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
         self.v[0x0f] = 0;
         for byte in self.i..(self.i + n) {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
@@ -279,75 +306,73 @@ impl Processor {
             }
         }
         self.vram_changed = true;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // SKP Vx
-    fn op_ex9e(&mut self, x: usize) {
-        let pressed = self.keypad[self.v[x] as usize];
-        self.pc += OPCODE_SIZE * (if pressed { 2 } else { 1 });
+    fn op_ex9e(&mut self, x: usize) -> ProgramCounter {
+        ProgramCounter::skip_if(self.keypad[self.v[x] as usize])
     }
 
     // SKNP Vx
-    fn op_exa1(&mut self, x: usize) {
-        let pressed = self.keypad[self.v[x] as usize];
-        self.pc += OPCODE_SIZE * (if !pressed { 2 } else { 1 });
+    fn op_exa1(&mut self, x: usize) -> ProgramCounter {
+        ProgramCounter::skip_if(!self.keypad[self.v[x] as usize])
     }
     // LD Vx, DT
-    fn op_fx07(&mut self, x: usize) {
+    fn op_fx07(&mut self, x: usize) -> ProgramCounter {
         self.v[x] = self.delay_timer;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // LD Vx, K
-    fn op_fx0a(&mut self, x: usize) {
+    fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
         self.keypad_waiting = true;
         self.keypad_register = x;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // LD DT, Vx
-    fn op_fx15(&mut self, x: usize) {
+    fn op_fx15(&mut self, x: usize) -> ProgramCounter {
         self.delay_timer = self.v[x];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // LD ST, Vx
-    fn op_fx18(&mut self, x: usize) {
+    fn op_fx18(&mut self, x: usize) -> ProgramCounter {
         self.sound_timer = self.v[x];
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // ADD I, Vx
-    fn op_fx1e(&mut self, x: usize) {
+    fn op_fx1e(&mut self, x: usize) -> ProgramCounter {
         self.i += self.v[x] as usize;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
     // LD F, Vx
-    fn op_fx29(&mut self, x: usize) {
+    fn op_fx29(&mut self, x: usize) -> ProgramCounter {
         self.i = (self.v[x] as usize) * 5;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // LD B, Vx
-    fn op_fx33(&mut self, x: usize) {
+    fn op_fx33(&mut self, x: usize) -> ProgramCounter {
         self.ram[self.i] = self.v[x] / 100;
         self.ram[self.i + 1] = (self.v[x] % 100) / 10;
         self.ram[self.i + 2] = self.v[x] % 10;
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // LD [I], Vx
-    fn op_fx55(&mut self, x: usize) {
+    fn op_fx55(&mut self, x: usize) -> ProgramCounter {
         for i in 0..self.v[x] as usize {
             self.ram[self.i + i] = self.v[i];
         }
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 
     // LD Vx, [I]
-    fn op_fx65(&mut self, x: usize) {
+    fn op_fx65(&mut self, x: usize) -> ProgramCounter {
         for i in 0..self.v[x] as usize {
             self.v[i] = self.ram[self.i + i];
         }
-        self.pc += OPCODE_SIZE;
+        ProgramCounter::Next
     }
 }
 #[cfg(test)]
