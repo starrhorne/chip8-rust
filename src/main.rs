@@ -4,14 +4,14 @@ mod drivers;
 mod processor;
 mod font;
 
-use drivers::DisplayDriver;
-use drivers::AudioDriver;
-use drivers::InputDriver;
-
-use processor::Processor;
-
+use std::fs::File;
+use std::io::prelude::*;
 use std::thread;
 use std::time::Duration;
+use std::env;
+
+use drivers::{DisplayDriver, AudioDriver, InputDriver};
+use processor::Processor;
 
 const CHIP8_WIDTH: usize = 64;
 const CHIP8_HEIGHT: usize = 32;
@@ -27,6 +27,15 @@ fn main() {
     let mut display_driver = DisplayDriver::new(&sdl_context);
     let mut input_driver = InputDriver::new(&sdl_context);
     let mut processor = Processor::new();
+
+
+    let args: Vec<String> = env::args().collect();
+    let filename = &args[1];
+    let mut f = File::open(filename).expect("file not found");
+    let mut buffer = vec![0u8; 3584];
+    f.read(&mut buffer).expect("couldn't read file");
+    println!("read {} bytes", buffer.len());
+    processor.load(buffer);
 
     loop {
         match input_driver.poll() {
