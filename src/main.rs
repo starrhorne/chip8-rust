@@ -19,7 +19,7 @@ const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
-    let sleep_duration = Duration::from_millis(10);
+    let sleep_duration = Duration::from_millis(30);
 
     let sdl_context = sdl2::init().unwrap();
 
@@ -44,6 +44,13 @@ fn main() {
                 let output = processor.tick(keypad);
 
                 if output.vram_changed {
+                    // println!("VRAM:");
+                    // for y in 0..CHIP8_HEIGHT {
+                    //     for x in 0..CHIP8_WIDTH {
+                    //         print!("{}", output.vram[y][x])
+                    //     }
+                    //     println!("")
+                    // }
                     display_driver.draw(output.vram);
                 }
 
