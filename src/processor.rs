@@ -306,11 +306,11 @@ impl Processor {
     // DRW Vx, Vy, nibble
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
         self.v[0x0f] = 0;
-        for byte in self.i..(self.i + n) {
+        for byte in 0..n {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
             for bit in 0..8 {
                 let x = (self.v[x] as usize + bit) % CHIP8_WIDTH;
-                let color = (self.ram[byte] >> bit) & 1;
+                let color = (self.ram[self.i + byte] >> (7 - bit)) & 1;
                 self.v[0x0f] |= color & self.vram[y][x];
                 self.vram[y][x] ^= color;
 
