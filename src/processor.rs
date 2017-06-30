@@ -415,7 +415,7 @@ impl Processor {
     // The interpreter copies the values of registers V0 through Vx
     // into memory, starting at the address in I.
     fn op_fx55(&mut self, x: usize) -> ProgramCounter {
-        for i in 0..self.v[x] as usize {
+        for i in 0..x {
             self.ram[self.i + i] = self.v[i];
         }
         ProgramCounter::Next
@@ -425,7 +425,7 @@ impl Processor {
     // The interpreter reads values from memory starting at location
     // I into registers V0 through Vx.
     fn op_fx65(&mut self, x: usize) -> ProgramCounter {
-        for i in 0..self.v[x] as usize {
+        for i in 0..x as usize {
             self.v[i] = self.ram[self.i + i];
         }
         ProgramCounter::Next
