@@ -232,7 +232,10 @@ impl Processor {
     // ADD Vx, byte
     // Set Vx = Vx + kk.
     fn op_7xkk(&mut self, x: usize, kk: u8) -> ProgramCounter {
-        self.v[x] += kk;
+        let vx = self.v[x] as u16;
+        let val = kk as u16;
+        let result = vx + val;
+        self.v[x] = result as u8;
         ProgramCounter::Next
     }
     // LD Vx, Vy
