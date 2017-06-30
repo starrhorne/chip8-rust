@@ -204,7 +204,7 @@ impl Processor {
     // The interpreter increments the stack pointer, then puts the
     // current PC on the top of the stack. The PC is then set to nnn.
     fn op_2nnn(&mut self, nnn: usize) -> ProgramCounter {
-        self.stack[self.sp] = self.pc;
+        self.stack[self.sp] = self.pc + OPCODE_SIZE;
         self.sp += 1;
         ProgramCounter::Jump(nnn)
     }
