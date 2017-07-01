@@ -427,7 +427,7 @@ fn test_op_fx55() {
     let mut processor = build_processor();
     processor.i = 1000;
     processor.run_opcode(0xff55);
-    for i in 0..0x0f {
+    for i in 0..16 {
         assert_eq!(processor.ram[1000 + i as usize], processor.v[i]);
     }
     assert_eq!(processor.pc, NEXT_PC);
@@ -437,13 +437,13 @@ fn test_op_fx55() {
 #[test]
 fn test_op_fx65() {
     let mut processor = build_processor();
-    for i in 0..0x0f as usize {
+    for i in 0..16 as usize {
         processor.ram[1000 + i] = i as u8;
     }
     processor.i = 1000;
     processor.run_opcode(0xff65);
 
-    for i in 0..0x0f as usize {
+    for i in 0..16 as usize {
         assert_eq!(processor.v[i], processor.ram[1000 + i]);
     }
     assert_eq!(processor.pc, NEXT_PC);
