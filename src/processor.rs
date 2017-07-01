@@ -286,7 +286,7 @@ impl Processor {
     // otherwise 0. Then Vx is divided by 2.
     fn op_8x06(&mut self, x: usize) -> ProgramCounter {
         self.v[0x0f] = self.v[x] & 1;
-        self.v[x] /= 2;
+        self.v[x] >>= 1;
         ProgramCounter::Next
     }
     // SUBN Vx, Vy
@@ -302,7 +302,7 @@ impl Processor {
     // otherwise to 0. Then Vx is multiplied by 2.
     fn op_8x0e(&mut self, x: usize) -> ProgramCounter {
         self.v[0x0f] = (self.v[x] & 0b10000000) >> 7;
-        self.v[x] *= 2;
+        self.v[x] <<= 1;
         ProgramCounter::Next
     }
     // SNE Vx, Vy
@@ -391,12 +391,18 @@ impl Processor {
     // Set I = I + Vx
     fn op_fx1e(&mut self, x: usize) -> ProgramCounter {
         self.i += self.v[x] as usize;
+        self.v[0x0f] = if self.i > 0x0F00 { 1 } else { 0 };
         ProgramCounter::Next
     }
     // LD F, Vx
     // Set I = location of sprite for digit Vx.
     fn op_fx29(&mut self, x: usize) -> ProgramCounter {
+        println!("{}", self.v[x]);
         self.i = (self.v[x] as usize) * 5;
+
+        for i in 0..5 {
+            println!("{}: {:b}", i, self.ram[self.i + i]);
+        }
         ProgramCounter::Next
     }
 
@@ -408,6 +414,13 @@ impl Processor {
         self.ram[self.i] = self.v[x] / 100;
         self.ram[self.i + 1] = (self.v[x] % 100) / 10;
         self.ram[self.i + 2] = self.v[x] % 10;
+        println!(
+            "BCD: {}, {}, {}, {}",
+            self.v[x],
+            self.ram[self.i],
+            self.ram[self.i + 1],
+            self.ram[self.i + 2]
+        );
         ProgramCounter::Next
     }
 

@@ -71,7 +71,7 @@ fn test_op_2nnn() {
     processor.run_opcode(0x2666);
     assert_eq!(processor.pc, 0x0666);
     assert_eq!(processor.sp, 1);
-    assert_eq!(processor.stack[0], START_PC);
+    assert_eq!(processor.stack[0], NEXT_PC);
 }
 // SE VX, byte
 #[test]
@@ -426,8 +426,7 @@ fn test_op_fx33() {
 fn test_op_fx55() {
     let mut processor = build_processor();
     processor.i = 1000;
-    processor.v[5] = 0x0f;
-    processor.run_opcode(0xf555);
+    processor.run_opcode(0xff55);
     for i in 0..0x0f {
         assert_eq!(processor.ram[1000 + i as usize], processor.v[i]);
     }
@@ -442,8 +441,7 @@ fn test_op_fx65() {
         processor.ram[1000 + i] = i as u8;
     }
     processor.i = 1000;
-    processor.v[5] = 0x0f;
-    processor.run_opcode(0xf565);
+    processor.run_opcode(0xff65);
 
     for i in 0..0x0f as usize {
         assert_eq!(processor.v[i], processor.ram[1000 + i]);
