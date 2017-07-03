@@ -72,7 +72,7 @@ impl Processor {
     }
 
     pub fn load(&mut self, data: &[u8]) {
-        for (i, &byte) in data.into_iter().enumerate() {
+        for (i, &byte) in data.iter().enumerate() {
             let addr = 0x200 + i;
             if addr < 4096 {
                 self.ram[0x200 + i] = byte;
