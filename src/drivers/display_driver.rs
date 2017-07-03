@@ -57,7 +57,7 @@ fn color(value: u8) -> pixels::Color {
     if value == 0 {
         pixels::Color::RGB(0, 0, 0)
     } else {
-        pixels::Color::RGB(255, 0, 0)
+        pixels::Color::RGB(0, 250, 0)
     }
 }
 
