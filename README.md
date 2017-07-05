@@ -32,3 +32,7 @@ Feel free to let me know if you have any questions or comments about this code.
 At the time I'm writing this, I'm pretty new to Rust so it may not be 100% idiomatic. You can reach me on twitter @StarrHorne, or by opening an issue on this repo. 
 
 
+## Credits
+
+Most of the SDL-related code was taken from the sdl2 crate's documentation and examples. I also used Mike Zaby's [rust chip8 repository](https://github.com/mikezaby/chip-8.rs) as a reference, though I didn't use any of his code.  
+
