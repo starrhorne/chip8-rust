@@ -1,3 +1,5 @@
+![Screenshot](/screenshot.png?raw=true "The emulator running 'blinky'")
+
 This is a chip-8 VM built in rust. If you're reading this, chances are that you're thinking of writing your own chip8 emulator. You should! It gives you a great feel for how home computers worked back in the late 70s. It's also a nice project for people new to Rust, because you don't need any of the language's more advanced features (like generics and traits). 
 
 ## Resources
