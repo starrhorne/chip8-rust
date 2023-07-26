@@ -20,6 +20,18 @@ You need to have sdl2 installed with headers. On Ubuntu 17.04, this did the tric
 sudo apt-get install libsdl2-dev libsdl2-gfx-dev
 ```
 
+On Windows its less troublesome to build using vcpkg, install using:
+
+```
+cargo install cargo-vcpkg
+```
+
+Then you can build and run the program running this once
+
+```
+cargo vcpkg build
+```
+
 ## Usage
 
 Clone this repository, then run:
