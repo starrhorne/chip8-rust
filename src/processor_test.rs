@@ -27,7 +27,7 @@ fn test_initial_state() {
 #[test]
 fn test_load_data() {
     let mut processor = Processor::new();
-    processor.load(vec![1, 2, 3]);
+    processor.load(&[1, 2, 3]);
     assert_eq!(processor.ram[0x200], 1);
     assert_eq!(processor.ram[0x201], 2);
     assert_eq!(processor.ram[0x202], 3);
