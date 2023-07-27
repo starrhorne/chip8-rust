@@ -81,8 +81,8 @@ impl Processor {
             }
         }
     }
-
-    pub fn tick(&mut self, keypad: [bool; 16]) -> OutputState {
+    
+    pub fn tick(&mut self, keypad: [bool; 16], subtract: bool) -> OutputState {
         self.keypad = keypad;
         self.vram_changed = false;
 
@@ -95,10 +95,10 @@ impl Processor {
                 }
             }
         } else {
-            if self.delay_timer > 0 {
+            if self.delay_timer > 0 && subtract {
                 self.delay_timer -= 1
             }
-            if self.sound_timer > 0 {
+            if self.sound_timer > 0 && subtract {
                 self.sound_timer -= 1
             }
             let opcode = self.get_opcode();

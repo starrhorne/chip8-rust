@@ -18,9 +18,13 @@ const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
-    //let sleep_duration = Duration::from_micros(16670); //60hz
+    /*
+        60 120 180 240 300 360 420 480 8 times
+        600 660 720 780 
+     */
+    //let sleep_duration = Duration::from_micros(16670); //60hz 60 120 180 240 300 360 420 480 540 600
     let sleep_duration = Duration::from_millis(2); //500hz
-
+    let mut clock_count: u8 = 0;
     let sdl_context = sdl2::init().unwrap();
 
     let args: Vec<String> = env::args().collect();
@@ -35,8 +39,14 @@ fn main() {
     processor.load(&cartridge_driver.rom);
 
     while let Ok(keypad) = input_driver.poll() {
-
-        let output = processor.tick(keypad);
+        //duct tape
+        let output = match clock_count {
+            8 => {
+                clock_count=0;
+                processor.tick(keypad, true)
+            },
+            _ => processor.tick(keypad,false),
+        };
 
         if output.vram_changed {
             display_driver.draw(output.vram);
@@ -49,5 +59,6 @@ fn main() {
         }
 
         thread::sleep(sleep_duration);
+        clock_count+=1;
     }
 }
