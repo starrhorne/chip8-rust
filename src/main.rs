@@ -5,7 +5,7 @@ mod processor;
 mod font;
 
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration,Instant};
 use std::env;
 
 use drivers::{DisplayDriver, AudioDriver, InputDriver, CartridgeDriver};
@@ -18,13 +18,7 @@ const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
-    /*
-        60 120 180 240 300 360 420 480 8 times
-        600 660 720 780 
-     */
-    //let sleep_duration = Duration::from_micros(16670); //60hz 60 120 180 240 300 360 420 480 540 600
-    let sleep_duration = Duration::from_millis(2); //500hz
-    let mut clock_count: u8 = 0;
+    let sleep_duration = Duration::from_micros(16670); //60hz 
     let sdl_context = sdl2::init().unwrap();
 
     let args: Vec<String> = env::args().collect();
@@ -37,19 +31,13 @@ fn main() {
     let mut processor = Processor::new();
 
     processor.load(&cartridge_driver.rom);
-
+    let mut opcode_count = 0;
     while let Ok(keypad) = input_driver.poll() {
-        //duct tape
-        let output = match clock_count {
-            8 => {
-                clock_count=0;
-                processor.tick(keypad, true)
-            },
-            _ => processor.tick(keypad,false),
-        };
+        //duct tape of the century
+        let output = processor.tick(&keypad,false);
 
         if output.vram_changed {
-            display_driver.draw(output.vram);
+           display_driver.draw(&output.vram);
         }
 
         if output.beep {
@@ -57,8 +45,13 @@ fn main() {
         } else {
             audio_driver.stop_beep();
         }
-
-        thread::sleep(sleep_duration);
-        clock_count+=1;
+        if opcode_count >=10 {
+            opcode_count =0;
+            if processor.sound_timer > 0 {processor.sound_timer -=1}
+            if processor.delay_timer > 0 {processor.delay_timer -=1}
+            thread::sleep(sleep_duration);
+        }
+        opcode_count+=1;
     }
+    
 }

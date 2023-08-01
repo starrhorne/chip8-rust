@@ -1,3 +1,5 @@
+use std::os::windows::process;
+
 use super::*;
 const START_PC: usize = 0xF00;
 const NEXT_PC: usize = START_PC + OPCODE_SIZE;
@@ -344,21 +346,18 @@ fn test_op_fx07() {
 #[test]
 fn test_op_fx0a() {
     let mut processor = build_processor();
+    processor.ram[START_PC] = 0xf5;
+    processor.ram[START_PC+1] = 0x0a;
     processor.run_opcode(0xf50a);
-    assert_eq!(processor.keypad_waiting, true);
-    assert_eq!(processor.keypad_register, 5);
-    assert_eq!(processor.pc, NEXT_PC);
+    assert_eq!(processor.pc, START_PC);
 
     // Tick with no keypresses doesn't do anything
-    processor.tick([false; 16],false);
-    assert_eq!(processor.keypad_waiting, true);
-    assert_eq!(processor.keypad_register, 5);
-    assert_eq!(processor.pc, NEXT_PC);
+    processor.tick(&[false; 16],false);
+    assert_eq!(processor.pc, START_PC);
 
     // Tick with a keypress finishes wait and loads
     // first pressed key into vx
-    processor.tick([true; 16],false);
-    assert_eq!(processor.keypad_waiting, false);
+    processor.tick(&[true; 16],false);
     assert_eq!(processor.v[5], 0);
     assert_eq!(processor.pc, NEXT_PC);
 
@@ -455,7 +454,7 @@ fn test_timers() {
     let mut processor = build_processor();
     processor.delay_timer = 200;
     processor.sound_timer = 100;
-    processor.tick([false; 16],true);
+    processor.tick(&[false; 16],true);
     assert_eq!(processor.delay_timer, 199);
     assert_eq!(processor.sound_timer, 99);
 }

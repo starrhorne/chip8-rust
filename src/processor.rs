@@ -5,6 +5,7 @@ use font::FONT_SET;
 use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
 use CHIP8_RAM;
+use sdl2::sys::__W_CONTINUED;
 
 const OPCODE_SIZE: usize = 2;
 
@@ -15,6 +16,8 @@ pub struct OutputState<'a> {
 }
 
 enum ProgramCounter {
+    Unknown(u16),
+    Stay,
     Next,
     Skip,
     Jump(usize),
@@ -39,11 +42,9 @@ pub struct Processor {
     i: usize,
     pc: usize,
     sp: usize,
-    delay_timer: u8,
-    sound_timer: u8,
+    pub delay_timer: u8,
+    pub sound_timer: u8,
     keypad: [bool; 16],
-    keypad_waiting: bool,
-    keypad_register: usize,
 }
 
 impl Processor {
@@ -66,8 +67,6 @@ impl Processor {
             delay_timer: 0,
             sound_timer: 0,
             keypad: [false; 16],
-            keypad_waiting: false,
-            keypad_register: 0,
         }
     }
 
@@ -82,28 +81,19 @@ impl Processor {
         }
     }
     
-    pub fn tick(&mut self, keypad: [bool; 16], subtract: bool) -> OutputState {
-        self.keypad = keypad;
+    pub fn tick(&mut self, keypad: &[bool; 16], subtract: bool) -> OutputState {
+        self.keypad = *keypad;
         self.vram_changed = false;
 
-        if self.keypad_waiting {
-            for i in 0..keypad.len() {
-                if keypad[i] {
-                    self.keypad_waiting = false;
-                    self.v[self.keypad_register] = i as u8;
-                    break;
-                }
-            }
-        } else {
-            if self.delay_timer > 0 && subtract {
-                self.delay_timer -= 1
-            }
-            if self.sound_timer > 0 && subtract {
-                self.sound_timer -= 1
-            }
-            let opcode = self.get_opcode();
-            self.run_opcode(opcode);
-        }
+        // if self.delay_timer > 0 && subtract {
+        //     self.delay_timer -= 1
+        // }
+        // if self.sound_timer > 0 && subtract {
+        //     self.sound_timer -= 1
+        // }
+        let opcode = self.get_opcode();
+        self.run_opcode(opcode);
+    
 
         OutputState {
             vram: &self.vram,
@@ -164,10 +154,15 @@ impl Processor {
             (0x0f, _, 0x03, 0x03) => self.op_fx33(x),
             (0x0f, _, 0x05, 0x05) => self.op_fx55(x),
             (0x0f, _, 0x06, 0x05) => self.op_fx65(x),
-            _ => ProgramCounter::Next,
+            _ => ProgramCounter::Unknown(opcode),
         };
 
         match pc_change {
+            ProgramCounter::Unknown(opcode) => {
+                println!("ERROR: OPCODE {:#06x} UNKNOWN",opcode);
+                self.pc += OPCODE_SIZE;
+            },
+            ProgramCounter::Stay => (),
             ProgramCounter::Next => self.pc += OPCODE_SIZE,
             ProgramCounter::Skip => self.pc += 2 * OPCODE_SIZE,
             ProgramCounter::Jump(addr) => self.pc = addr,
@@ -277,7 +272,7 @@ impl Processor {
     // SUB Vx, Vy
     // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
     fn op_8xy5(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[x] > self.v[y] { 1 } else { 0 };
+        self.v[0x0f] = if self.v[x] >= self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[x].wrapping_sub(self.v[y]);
         ProgramCounter::Next
     }
@@ -293,7 +288,7 @@ impl Processor {
     // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted
     // from Vy, and the results stored in Vx.
     fn op_8xy7(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[y] > self.v[x] { 1 } else { 0 };
+        self.v[0x0f] = if self.v[y] >= self.v[x] { 1 } else { 0 };
         self.v[x] = self.v[y].wrapping_sub(self.v[x]);
         ProgramCounter::Next
     }
@@ -371,9 +366,13 @@ impl Processor {
     // LD Vx, K
     // Wait for a key press, store the value of the key in Vx.
     fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
-        self.keypad_waiting = true;
-        self.keypad_register = x;
-        ProgramCounter::Next
+        for i in 0..16{
+            if self.keypad[i] {
+                self.v[x] = i as u8;
+                return ProgramCounter::Next;
+            }
+        }
+        ProgramCounter::Stay
     }
     // LD DT, Vx
     // Set delay timer = Vx.
