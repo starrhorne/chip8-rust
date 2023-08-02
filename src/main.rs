@@ -45,7 +45,8 @@ fn main() {
         } else {
             audio_driver.stop_beep();
         }
-        if opcode_count >=10 {
+        //buffer of opcodes per 60hz, set it to where it feels right, around 10-15
+        if opcode_count >=12 {
             opcode_count =0;
             if processor.sound_timer > 0 {processor.sound_timer -=1}
             if processor.delay_timer > 0 {processor.delay_timer -=1}
