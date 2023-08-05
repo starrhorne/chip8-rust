@@ -350,12 +350,12 @@ fn test_op_fx0a() {
     assert_eq!(processor.pc, START_PC);
 
     // Tick with no keypresses doesn't do anything
-    processor.tick(&[false; 16],false);
+    processor.tick(&[false; 16]);
     assert_eq!(processor.pc, START_PC);
 
     // Tick with a keypress finishes wait and loads
     // first pressed key into vx
-    processor.tick(&[true; 16],false);
+    processor.tick(&[true; 16]);
     assert_eq!(processor.v[5], 0);
     assert_eq!(processor.pc, NEXT_PC);
 
@@ -452,7 +452,9 @@ fn test_timers() {
     let mut processor = build_processor();
     processor.delay_timer = 200;
     processor.sound_timer = 100;
-    processor.tick(&[false; 16],true);
+    processor.tick(&[false; 16]);
+    processor.delay_timer -=1;
+    processor.sound_timer -=1;
     assert_eq!(processor.delay_timer, 199);
     assert_eq!(processor.sound_timer, 99);
 }

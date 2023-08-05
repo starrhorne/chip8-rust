@@ -34,7 +34,7 @@ impl ProgramCounter {
 
 pub struct Processor {
     vram: [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
-    vram_changed: bool,
+    pub vram_changed: bool,
     ram: [u8; CHIP8_RAM],
     stack: [usize; 16],
     v: [u8; 16],
@@ -80,19 +80,12 @@ impl Processor {
         }
     }
     
-    pub fn tick(&mut self, keypad: &[bool; 16], subtract: bool) -> OutputState {
+    pub fn tick(&mut self, keypad: &[bool; 16]) -> OutputState {
+        //self.vram_changed = false;
         self.keypad = *keypad;
-        self.vram_changed = false;
 
-        // if self.delay_timer > 0 && subtract {
-        //     self.delay_timer -= 1
-        // }
-        // if self.sound_timer > 0 && subtract {
-        //     self.sound_timer -= 1
-        // }
         let opcode = self.get_opcode();
         self.run_opcode(opcode);
-    
 
         OutputState {
             vram: &self.vram,

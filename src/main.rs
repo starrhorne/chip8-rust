@@ -5,7 +5,7 @@ mod processor;
 mod font;
 
 use std::thread;
-use std::time::{Duration,Instant};
+use std::time::{Duration};
 use std::env;
 
 use drivers::{DisplayDriver, AudioDriver, InputDriver, CartridgeDriver};
@@ -32,19 +32,26 @@ fn main() {
 
     processor.load(&cartridge_driver.rom);
     let mut opcode_count = 0;
+  
+
+
     while let Ok(keypad) = input_driver.poll() {
         //duct tape of the century
-        let output = processor.tick(&keypad,false);
+        let output = processor.tick(&keypad);
 
-        if output.vram_changed {
-           display_driver.draw(&output.vram);
-        }
 
         if output.beep {
             audio_driver.start_beep();
-        } else {
+        } 
+        else {
             audio_driver.stop_beep();
         }
+
+        if output.vram_changed {
+            display_driver.draw(&output.vram);
+            processor.vram_changed = false;
+        }
+
         //buffer of opcodes per 60hz, set it to where it feels right, around 10-15
         if opcode_count >=12 {
             opcode_count =0;
