@@ -1,7 +1,10 @@
 use rand;
 use rand::Rng;
 use font::FONT_SET;
-
+/*
+    the simplest, most straightforward way to implement display wait is, when a DXYN occurs, check if the instruction is the first one that occurred on a frame. If it is, allow DXYN to run normally. If not, break the loop so that it will restart at the next frame instead (doesn't increment PC)
+currently there isnt any
+*/
 use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
 use CHIP8_RAM;
@@ -264,32 +267,36 @@ impl Processor {
     // SUB Vx, Vy
     // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
     fn op_8xy5(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[x] >= self.v[y] { 1 } else { 0 };
+        let temp = if self.v[x] >= self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[x].wrapping_sub(self.v[y]);
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SHR Vx {, Vy}
     // If the least-significant bit of Vx is 1, then VF is set to 1,
     // otherwise 0. Then Vx is divided by 2.
     fn op_8x06(&mut self, x: usize) -> ProgramCounter {
-        self.v[0x0f] = self.v[x] & 1;
+        let temp = self.v[x] & 1;
         self.v[x] >>= 1;
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SUBN Vx, Vy
     // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted
     // from Vy, and the results stored in Vx.
     fn op_8xy7(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[y] >= self.v[x] { 1 } else { 0 };
+        let temp = if self.v[y] >= self.v[x] { 1 } else { 0 };
         self.v[x] = self.v[y].wrapping_sub(self.v[x]);
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SHL Vx {, Vy}
     // If the most-significant bit of Vx is 1, then VF is set to 1,
     // otherwise to 0. Then Vx is multiplied by 2.
     fn op_8x0e(&mut self, x: usize) -> ProgramCounter {
-        self.v[0x0f] = (self.v[x] & 0b10000000) >> 7;
+        let temp = self.v[x]  >> 7;
         self.v[x] <<= 1;
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SNE Vx, Vy
