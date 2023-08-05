@@ -5,7 +5,6 @@ use font::FONT_SET;
 use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
 use CHIP8_RAM;
-use sdl2::sys::__W_CONTINUED;
 
 const OPCODE_SIZE: usize = 2;
 
