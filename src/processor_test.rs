@@ -302,7 +302,8 @@ fn test_op_dxyn_wrap_vertical() {
 #[test]
 fn test_op_ex9e() {
     let mut processor = build_processor();
-    processor.keypad[9] = true;
+    //                   fedcba9876543210
+    processor.keypad = 0b0000001000000000;
     processor.v[5] = 9;
     processor.run_opcode(0xe59e);
     assert_eq!(processor.pc, SKIPPED_PC);
@@ -318,7 +319,7 @@ fn test_op_ex9e() {
 #[test]
 fn test_op_exa1() {
     let mut processor = build_processor();
-    processor.keypad[9] = true;
+    processor.keypad = 0b0000001000000000;
     processor.v[5] = 9;
     processor.run_opcode(0xe5a1);
     assert_eq!(processor.pc, NEXT_PC);
@@ -350,12 +351,12 @@ fn test_op_fx0a() {
     assert_eq!(processor.pc, START_PC);
 
     // Tick with no keypresses doesn't do anything
-    processor.tick(&[false; 16]);
+    processor.tick(0x0000);
     assert_eq!(processor.pc, START_PC);
 
     // Tick with a keypress finishes wait and loads
     // first pressed key into vx
-    processor.tick(&[true; 16]);
+    processor.tick(0xffff);
     assert_eq!(processor.v[5], 0);
     assert_eq!(processor.pc, NEXT_PC);
 
@@ -452,7 +453,7 @@ fn test_timers() {
     let mut processor = build_processor();
     processor.delay_timer = 200;
     processor.sound_timer = 100;
-    processor.tick(&[false; 16]);
+    processor.tick(0x0000);
     processor.delay_timer -=1;
     processor.sound_timer -=1;
     assert_eq!(processor.delay_timer, 199);

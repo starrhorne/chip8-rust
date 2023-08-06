@@ -46,7 +46,7 @@ pub struct Processor {
     sp: usize,
     pub delay_timer: u8,
     pub sound_timer: u8,
-    keypad: [bool; 16],
+    keypad: u16,
 }
 
 impl Processor {
@@ -68,7 +68,7 @@ impl Processor {
             sp: 0,
             delay_timer: 0,
             sound_timer: 0,
-            keypad: [false; 16],
+            keypad: 0,
         }
     }
 
@@ -83,9 +83,9 @@ impl Processor {
         }
     }
     
-    pub fn tick(&mut self, keypad: &[bool; 16]) -> OutputState {
+    pub fn tick(&mut self, keypad: u16) -> OutputState {
         //self.vram_changed = false;
-        self.keypad = *keypad;
+        self.keypad = keypad;
 
         let opcode = self.get_opcode();
         self.run_opcode(opcode);
@@ -349,12 +349,12 @@ impl Processor {
     // SKP Vx
     // Skip next instruction if key with the value of Vx is pressed.
     fn op_ex9e(&mut self, x: usize) -> ProgramCounter {
-        ProgramCounter::skip_if(self.keypad[self.v[x] as usize])
+        ProgramCounter::skip_if((self.keypad >> self.v[x]) & 0x1 == 1)
     }
     // SKNP Vx
     // Skip next instruction if key with the value of Vx is NOT pressed.
     fn op_exa1(&mut self, x: usize) -> ProgramCounter {
-        ProgramCounter::skip_if(!self.keypad[self.v[x] as usize])
+        ProgramCounter::skip_if((self.keypad >>  self.v[x]) & 0x1 == 0)
     }
     // LD Vx, DT
     // Set Vx = delay timer value.
@@ -366,7 +366,12 @@ impl Processor {
     // Wait for a key press, store the value of the key in Vx.
     fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
         for i in 0..16{
-            if self.keypad[i] {
+            /*
+                i >> 0
+                  fedc ba98 7654 3210
+                0b0000 0000 0000 0000
+            */
+            if (self.keypad >> i) & 0x1 == 1 {
                 self.v[x] = i as u8;
                 return ProgramCounter::Next;
             }

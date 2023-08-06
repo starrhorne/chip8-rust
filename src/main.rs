@@ -37,7 +37,7 @@ fn main() {
 
     while let Ok(keypad) = input_driver.poll() {
         //duct tape of the century
-        let output = processor.tick(&keypad);
+        let output = processor.tick(keypad);
 
 
         if output.beep {
@@ -53,7 +53,7 @@ fn main() {
         }
 
         //buffer of opcodes per 60hz, set it to where it feels right, around 10-15
-        if opcode_count >=12 {
+        if opcode_count >=15 {
             opcode_count =0;
             if processor.sound_timer > 0 {processor.sound_timer -=1}
             if processor.delay_timer > 0 {processor.delay_timer -=1}
