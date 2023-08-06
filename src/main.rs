@@ -38,7 +38,7 @@ fn main() {
     while let Ok(keypad) = input_driver.poll() {
         //duct tape of the century
         let output = processor.tick(keypad);
-
+        opcode_count+=1;
 
         if output.beep {
             audio_driver.start_beep();
@@ -59,7 +59,6 @@ fn main() {
             if processor.delay_timer > 0 {processor.delay_timer -=1}
             thread::sleep(sleep_duration);
         }
-        opcode_count+=1;
     }
     
 }
