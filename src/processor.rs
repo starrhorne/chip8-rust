@@ -365,17 +365,19 @@ impl Processor {
     // LD Vx, K
     // Wait for a key press, store the value of the key in Vx.
     fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
-        for i in 0..16{
-            /*
-                i >> 0
-                  fedc ba98 7654 3210
-                0b0000 0000 0000 0000
-            */
-            if (self.keypad >> i) & 0x1 == 1 {
-                self.v[x] = i as u8;
-                return ProgramCounter::Next;
+        if self.keypad > 0{
+            for i in 0..16{
+                /*
+                    i >> 0
+                      fedc ba98 7654 3210
+                    0b0000 0000 0000 0000
+                */
+                if (self.keypad >> i) & 0x1 == 1 {
+                    self.v[x] = i as u8;
+                    return ProgramCounter::Next;
+                }
             }
-        }
+        }    
         ProgramCounter::Stay
     }
     // LD DT, Vx
