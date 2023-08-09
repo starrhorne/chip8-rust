@@ -55,9 +55,9 @@ impl DisplayDriver {
 
 fn color(value: u8) -> pixels::Color {
     if value == 0 {
-        pixels::Color::RGB(0, 0, 0)
+        pixels::Color::RGB(0, 0,100)
     } else {
-        pixels::Color::RGB(0, 250, 0)
+        pixels::Color::RGB(0, 150, 0)
     }
 }
 

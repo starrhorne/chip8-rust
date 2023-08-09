@@ -345,21 +345,23 @@ fn test_op_fx07() {
 #[test]
 fn test_op_fx0a() {
     let mut processor = build_processor();
-    processor.ram[START_PC] = 0xf5;
-    processor.ram[START_PC+1] = 0x0a;
     processor.run_opcode(0xf50a);
-    assert_eq!(processor.pc, START_PC);
+    assert_eq!(processor.keypad_wait, true);
+    assert_eq!(processor.keypad_wait_register, 5);
+    assert_eq!(processor.pc, NEXT_PC);
 
     // Tick with no keypresses doesn't do anything
-    processor.tick(0x0000);
-    assert_eq!(processor.pc, START_PC);
+    processor.tick(0x0);
+    assert_eq!(processor.keypad_wait, true);
+    assert_eq!(processor.keypad_wait_register, 5);
+    assert_eq!(processor.pc, NEXT_PC);
 
     // Tick with a keypress finishes wait and loads
     // first pressed key into vx
     processor.tick(0xffff);
+    assert_eq!(processor.keypad_wait, false);
     assert_eq!(processor.v[5], 0);
     assert_eq!(processor.pc, NEXT_PC);
-
 
 }
 

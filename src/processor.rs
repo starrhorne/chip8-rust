@@ -12,7 +12,7 @@ use CHIP8_RAM;
 const OPCODE_SIZE: usize = 2;
 
 pub struct OutputState<'a> {
-    pub vram: &'a [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
+    pub vram: &'a [[u8; CHIP8_WIDTH];CHIP8_HEIGHT],
     pub vram_changed: bool,
     pub beep: bool,
 }
@@ -47,6 +47,8 @@ pub struct Processor {
     pub delay_timer: u8,
     pub sound_timer: u8,
     keypad: u16,
+    keypad_wait: bool,
+    keypad_wait_register: usize,
 }
 
 impl Processor {
@@ -58,7 +60,7 @@ impl Processor {
         }
 
         Processor {
-            vram: [[0; CHIP8_WIDTH]; CHIP8_HEIGHT],
+            vram: [[0; CHIP8_WIDTH];CHIP8_HEIGHT],
             vram_changed: false,
             ram: ram,
             stack: [0; 16],
@@ -69,6 +71,8 @@ impl Processor {
             delay_timer: 0,
             sound_timer: 0,
             keypad: 0,
+            keypad_wait: false,
+            keypad_wait_register: 0,
         }
     }
 
@@ -87,8 +91,19 @@ impl Processor {
         //self.vram_changed = false;
         self.keypad = keypad;
 
-        let opcode = self.get_opcode();
-        self.run_opcode(opcode);
+        if self.keypad_wait {
+            if self.keypad > 0{
+                /*
+                      fedc ba98 7654 3210
+                    0b0000 0000 0000 0000
+                */
+                self.keypad_wait = false;
+                self.v[self.keypad_wait_register] = self.keypad.trailing_zeros() as u8;
+            }
+        }
+        else {
+            self.run_opcode(self.get_opcode());
+        }
 
         OutputState {
             vram: &self.vram,
@@ -170,7 +185,7 @@ impl Processor {
     // CLS: Clear the display.
     fn op_00e0(&mut self) -> ProgramCounter {
         for y in 0..CHIP8_HEIGHT {
-            for x in 0..CHIP8_WIDTH {
+            for x in 0..CHIP8_WIDTH{
                 self.vram[y][x] = 0;
             }
         }
@@ -331,6 +346,14 @@ impl Processor {
     // it is set to 0. If the sprite is positioned so part of it is outside
     // the coordinates of the display, it wraps around to the opposite side
     // of the screen.
+
+    /*
+                                                        
+                                                        0b1_0110_010
+        0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
+
+     */
+
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
         self.v[0x0f] = 0;
         for byte in 0..n {
@@ -356,7 +379,7 @@ impl Processor {
     fn op_exa1(&mut self, x: usize) -> ProgramCounter {
         ProgramCounter::skip_if((self.keypad >>  self.v[x]) & 0x1 == 0)
     }
-    // LD Vx, DT
+    // LD Vx, sDT
     // Set Vx = delay timer value.
     fn op_fx07(&mut self, x: usize) -> ProgramCounter {
         self.v[x] = self.delay_timer;
@@ -364,21 +387,18 @@ impl Processor {
     }
     // LD Vx, K
     // Wait for a key press, store the value of the key in Vx.
+    
+    /*
+          8421 8421
+        0b0011_0101
+        0b1100_1010
+        0b0110_0101
+    */
+
     fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
-        if self.keypad > 0{
-            for i in 0..16{
-                /*
-                    i >> 0
-                      fedc ba98 7654 3210
-                    0b0000 0000 0000 0000
-                */
-                if (self.keypad >> i) & 0x1 == 1 {
-                    self.v[x] = i as u8;
-                    return ProgramCounter::Next;
-                }
-            }
-        }    
-        ProgramCounter::Stay
+        self.keypad_wait = true;
+        self.keypad_wait_register = x;
+        ProgramCounter::Next
     }
     // LD DT, Vx
     // Set delay timer = Vx.

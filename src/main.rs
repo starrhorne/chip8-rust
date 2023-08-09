@@ -18,7 +18,8 @@ const CHIP8_RAM: usize = 4096;
 
 
 fn main() {
-    let sleep_duration = Duration::from_micros(16670); //60hz 
+    let sleep_duration = Duration::from_millis(16);
+    //let sleep_duration = Duration::from_micros(16670); //60hz 
     let sdl_context = sdl2::init().unwrap();
 
     let args: Vec<String> = env::args().collect();
