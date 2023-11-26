@@ -49,7 +49,7 @@ fn main() {
         }
 
         if output.vram_changed {
-            display_driver.draw(&output.vram);
+            display_driver.draw(output.vram);
             processor.vram_changed = false;
         }
 

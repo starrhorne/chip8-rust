@@ -36,7 +36,7 @@ impl ProgramCounter {
 }
 
 pub struct Processor {
-    vram: [u8; CHIP8_HEIGHT],
+    vram: [u64; CHIP8_HEIGHT],
     pub vram_changed: bool,
     ram: [u8; CHIP8_RAM],
     stack: [usize; 16],
@@ -60,7 +60,7 @@ impl Processor {
         }
 
         Processor {
-            vram: [[0; CHIP8_WIDTH];CHIP8_HEIGHT],
+            vram: [0; CHIP8_HEIGHT],
             vram_changed: false,
             ram: ram,
             stack: [0; 16],
@@ -184,11 +184,7 @@ impl Processor {
 
     // CLS: Clear the display.
     fn op_00e0(&mut self) -> ProgramCounter {
-        for y in 0..CHIP8_HEIGHT {
-            for x in 0..CHIP8_WIDTH{
-                self.vram[y][x] = 0;
-            }
-        }
+        self.vram = [0; CHIP8_HEIGHT];
         self.vram_changed = true;
         ProgramCounter::Next
 
@@ -361,8 +357,8 @@ impl Processor {
             for bit in 0..8 {
                 let x = (self.v[x] as usize + bit) % CHIP8_WIDTH;
                 let color = (self.ram[self.i + byte] >> (7 - bit)) & 1;
-                self.v[0x0f] |= color & self.vram[y][x];
-                self.vram[y][x] ^= color;
+                //self.v[0x0f] |= color & self.vram[y][x];
+                //self.vram[y][x] ^= color;
 
             }
         }
@@ -380,12 +376,12 @@ impl Processor {
         self.v[0x0f] = 0;
         for byte in 0..n {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
-            let mask = self.ram[self.i + byte] as u64;
+            let mut mask = self.ram[self.i + byte] as u64;
             
-            if self.v[x] + 8 >= CHIP8_WIDTH
+            if usize::from(self.v[x]) + 8 >= CHIP8_WIDTH
             {
                 let tmp = mask << self.v[x];
-                mask >>= ((self.v[x] + 8) % CHIP8_WIDTH);
+                mask >>= (self.v[x] + 8) % CHIP8_WIDTH as u8;
                 mask |= tmp;
             }
             else
