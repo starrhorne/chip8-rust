@@ -48,10 +48,18 @@ fn main() {
             audio_driver.stop_beep();
         }
 
+        for y in 0..CHIP8_HEIGHT {
+            for x in 0..CHIP8_WIDTH {
+                print!("{}", if output.vram[y] >> x & 1 == 0 {" "} else {"1"});
+            }
+            println!();
+        }
+
         if output.vram_changed {
             display_driver.draw(output.vram);
             processor.vram_changed = false;
         }
+        
 
         //buffer of opcodes per 60hz, set it to where it feels right, around 10-15
         if opcode_count >=15 {

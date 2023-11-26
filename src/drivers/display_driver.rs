@@ -4,8 +4,6 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
-use std::convert::TryInto;
-
 use CHIP8_WIDTH;
 use CHIP8_HEIGHT;
 
@@ -40,7 +38,7 @@ impl DisplayDriver {
         DisplayDriver { canvas: canvas }
     }
     /*
-    pub fn draw(&mut self, pixels: &[u64; CHIP8_HEIGHT]) {
+    pub fn draw2(&mut self, pixels: &[u64; CHIP8_HEIGHT]) {
         for (y, row) in pixels.iter().enumerate() {
             for (x, &col) in row.iter().enumerate() {
                 let x = (x as u32) * SCALE_FACTOR;
@@ -61,23 +59,17 @@ impl DisplayDriver {
                 let _x = (x as u32) * SCALE_FACTOR;
                 let _y = (y as u32) * SCALE_FACTOR;
 
-                self.canvas.set_draw_color(
-                    color(
-                        (pixels[y] >> x & 1).try_into().unwrap()
-                    )
-                );
+                self.canvas.set_draw_color( color( (pixels[y] >> x) & 1 ));
 
                 let _ = self.canvas
-                    .fill_rect(
-                        Rect::new( _x as i32, _y as i32, SCALE_FACTOR, SCALE_FACTOR )
-                    )
-                ;
+                    .fill_rect( Rect::new( _x as i32, _y as i32, SCALE_FACTOR, SCALE_FACTOR ) );
             }
         }
+        self.canvas.present();
     }
 }
 
-fn color(value: u8) -> pixels::Color {
+fn color(value: u64) -> pixels::Color {
     if value == 0 {
         pixels::Color::RGB(0, 0,100)
     } else {
