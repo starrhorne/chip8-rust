@@ -390,7 +390,7 @@ impl Processor {
             }
             
             
-            self.v[0xf] = if self.vram[y] & mask > 0 { 1 } else { 0 };
+            self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
             self.vram[y] = self.vram[y] ^ mask;
                             
         }

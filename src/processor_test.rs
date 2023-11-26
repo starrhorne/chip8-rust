@@ -246,11 +246,11 @@ fn test_op_dxyn() {
     //assert_eq!(processor.vram[0][0], 0);
     assert_eq!(processor.vram[0] & 1, 0);
     //assert_eq!(processor.vram[0][1], 1);
-    assert_eq!(processor.vram[0] >> 1 & 1, 1);
+    assert_eq!((processor.vram[0] >> 1) & 1, 1);
     //assert_eq!(processor.vram[1][0], 1);
     assert_eq!(processor.vram[1] & 1, 1);
     //assert_eq!(processor.vram[1][1], 0);
-    assert_eq!(processor.vram[1] >> 1 & 1, 0);
+    assert_eq!((processor.vram[1] >> 1) & 1, 0);
     assert_eq!(processor.v[0x0f], 1);
     assert!(processor.vram_changed);
     assert_eq!(processor.pc, NEXT_PC);

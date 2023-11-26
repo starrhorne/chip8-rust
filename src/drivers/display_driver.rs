@@ -81,7 +81,6 @@ fn color(value: u8) -> pixels::Color {
     if value == 0 {
         pixels::Color::RGB(0, 0,100)
     } else {
-        println!("ass");
         pixels::Color::RGB(0, 150, 0)
     }
 }
