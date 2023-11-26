@@ -248,11 +248,11 @@ fn test_op_dxyn() {
     assert_eq!(processor.vram[0][0], 0);
     assert_eq!(processor.vram[0] & 0b1, 0);
     assert_eq!(processor.vram[0][1], 1);
-    assert_eq!(processor.vram[0] & 0b10, 1);
+    assert_eq!(processor.vram[0] & 0b10 >> 1, 1);
     assert_eq!(processor.vram[1][0], 1);
     assert_eq!(processor.vram[1] & 0b1, 1);
     assert_eq!(processor.vram[1][1], 0);
-    assert_eq!(processor.vram[1] & 0b10, 0);
+    assert_eq!(processor.vram[1] & 0b10 >> 1, 0);
     assert_eq!(processor.v[0x0f], 1);
     assert!(processor.vram_changed);
     assert_eq!(processor.pc, NEXT_PC);
@@ -271,7 +271,8 @@ fn test_op_dxyn_wrap_horizontal() {
     processor.v[1] = 0;
     processor.run_opcode(0xd011);
 
-    assert_eq!(processor.vram[0][x - 1], 0);
+    assert_eq!(processor.vram[0][x - 1], 0); //64 - 4 - 1 = 59
+    assert_eq!((processor.vram[0] >> (x - 1) & 1), 0);
     assert_eq!(processor.vram[0][x], 1);
     assert_eq!(processor.vram[0][x + 1], 1);
     assert_eq!(processor.vram[0][x + 2], 1);
