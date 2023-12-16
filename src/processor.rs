@@ -349,27 +349,15 @@ impl Processor {
         0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
 
      */
-
-    fn op_dxyn2(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
-        self.v[0x0f] = 0;
-        for byte in 0..n {
-            let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
-            for bit in 0..8 {
-                let x = (self.v[x] as usize + bit) % CHIP8_WIDTH;
-                let color = (self.ram[self.i + byte] >> (7 - bit)) & 1;
-                //self.v[0x0f] |= color & self.vram[y][x];
-                //self.vram[y][x] ^= color;
-
-            }
-        }
-        self.vram_changed = true;
-        ProgramCounter::Next
-    }
-
     /*
         0x1110_1010_0000
         0x0011_0101_0010 AND
         0x0010_0000_0000
+    */
+    
+    /*
+        0x0000_1100_0101
+        0x0000_
     */
 
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
@@ -378,15 +366,16 @@ impl Processor {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
             let mut mask = self.ram[self.i + byte] as u64;
             
-            if usize::from(self.v[x]) + 8 >= CHIP8_WIDTH
+            if usize::from(self.v[x]) + 8 > CHIP8_WIDTH
             {
-                let tmp = mask << self.v[x];
-                mask >>= (self.v[x] + 8) % CHIP8_WIDTH as u8;
+                
+                let tmp = mask << 56 >> self.v[x];
+                mask <<= 56 + ((self.v[x] + 8) % CHIP8_WIDTH as u8);
                 mask |= tmp;
             }
             else
             {
-                mask = mask << self.v[x];
+                mask = mask << 56 >> self.v[x];
             }
             
             

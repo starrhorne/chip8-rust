@@ -37,21 +37,7 @@ impl DisplayDriver {
 
         DisplayDriver { canvas: canvas }
     }
-    /*
-    pub fn draw2(&mut self, pixels: &[u64; CHIP8_HEIGHT]) {
-        for (y, row) in pixels.iter().enumerate() {
-            for (x, &col) in row.iter().enumerate() {
-                let x = (x as u32) * SCALE_FACTOR;
-                let y = (y as u32) * SCALE_FACTOR;
 
-                self.canvas.set_draw_color(color(col));
-                let _ = self.canvas
-                    .fill_rect(Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR));
-            }
-        }
-        self.canvas.present();
-    }
-    */
     pub fn draw(&mut self, pixels: &[u64; CHIP8_HEIGHT]) {
         
         for y in 0usize..CHIP8_HEIGHT {
@@ -59,7 +45,7 @@ impl DisplayDriver {
                 let _x = (x as u32) * SCALE_FACTOR;
                 let _y = (y as u32) * SCALE_FACTOR;
 
-                self.canvas.set_draw_color( color( (pixels[y] >> x) & 1 ));
+                self.canvas.set_draw_color( color( (pixels[y] >> (63 - x) ) & 1 ));
 
                 let _ = self.canvas
                     .fill_rect( Rect::new( _x as i32, _y as i32, SCALE_FACTOR, SCALE_FACTOR ) );
