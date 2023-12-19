@@ -366,22 +366,16 @@ impl Processor {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
             let mut mask = self.ram[self.i + byte] as u64;
             
-            if usize::from(self.v[x]) + 8 > CHIP8_WIDTH
-            {
-                
-                let tmp = mask << 56 >> self.v[x];
+            if usize::from(self.v[x]) + 8 > CHIP8_WIDTH {   
+                let tmp = mask << (56 - self.v[x]);
                 mask <<= 56 + ((self.v[x] + 8) % CHIP8_WIDTH as u8);
                 mask |= tmp;
             }
-            else
-            {
-                mask = mask << 56 >> self.v[x];
+            else {
+                mask = mask << (56 - self.v[x]);
             }
-            
-            
             self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
-            self.vram[y] = self.vram[y] ^ mask;
-                            
+            self.vram[y] = self.vram[y] ^ mask;               
         }
         self.vram_changed = true;
         ProgramCounter::Next
