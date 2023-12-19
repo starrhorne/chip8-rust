@@ -369,12 +369,12 @@ impl Processor {
             let mut mask = self.ram[self.i + byte] as u64;
            
             if x + 8 > CHIP8_WIDTH {
-                let tmp = mask << 56 >> x;
+                let tmp = mask >>  (x - 56);
                 mask <<= 56 + ((x + 8) % CHIP8_WIDTH as usize);
                 mask |= tmp;
             }
             else {
-                mask = mask << 56 >> x;
+                mask = mask << (56 - x);
             }
             self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
             self.vram[y] = self.vram[y] ^ mask;               
