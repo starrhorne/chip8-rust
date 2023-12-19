@@ -364,15 +364,17 @@ impl Processor {
         self.v[0x0f] = 0;
         for byte in 0..n {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
-            let mut mask = self.ram[self.i + byte] as u64;
+            let x = self.v[x] as usize % CHIP8_WIDTH;
             
-            if usize::from(self.v[x]) + 8 > CHIP8_WIDTH {   
-                let tmp = mask << (56 - self.v[x]);
-                mask <<= 56 + ((self.v[x] + 8) % CHIP8_WIDTH as u8);
+            let mut mask = self.ram[self.i + byte] as u64;
+           
+            if x + 8 > CHIP8_WIDTH {
+                let tmp = mask << 56 >> x;
+                mask <<= 56 + ((x + 8) % CHIP8_WIDTH as usize);
                 mask |= tmp;
             }
             else {
-                mask = mask << (56 - self.v[x]);
+                mask = mask << 56 >> x;
             }
             self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
             self.vram[y] = self.vram[y] ^ mask;               
