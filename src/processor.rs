@@ -19,7 +19,7 @@ pub struct OutputState<'a> {
 
 enum ProgramCounter {
     Unknown(u16),
-    Stay,
+    //Stay,
     Next,
     Skip,
     Jump(usize),
@@ -172,7 +172,7 @@ impl Processor {
                 println!("ERROR: OPCODE {:#06x} UNKNOWN",opcode);
                 self.pc += OPCODE_SIZE;
             },
-            ProgramCounter::Stay => (),
+            //ProgramCounter::Stay => (),
             ProgramCounter::Next => self.pc += OPCODE_SIZE,
             ProgramCounter::Skip => self.pc += 2 * OPCODE_SIZE,
             ProgramCounter::Jump(addr) => self.pc = addr,
@@ -377,11 +377,12 @@ impl Processor {
                 mask = mask << (56 - x);
             }
             self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
-            self.vram[y] = self.vram[y] ^ mask;
+            self.vram[y] = self.vram[y] ^ mask;               
         }
         self.vram_changed = true;
         ProgramCounter::Next
     }
+    // SKP Vx
     // SKP Vx
     // Skip next instruction if key with the value of Vx is pressed.
     fn op_ex9e(&mut self, x: usize) -> ProgramCounter {
