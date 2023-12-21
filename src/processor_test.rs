@@ -37,11 +37,13 @@ fn test_load_data() {
 #[test]
 fn test_op_00e0() {
     let mut processor = build_processor();
-    processor.vram = [1; CHIP8_HEIGHT];
+    processor.vram = [[128; CHIP8_WIDTH]; CHIP8_HEIGHT];
     processor.run_opcode(0x00e0);
 
     for y in 0..CHIP8_HEIGHT {
-        assert_eq!(processor.vram[y], 0);
+        for x in 0..CHIP8_WIDTH {
+            assert_eq!(processor.vram[y][x], 0);
+        }
     }
     assert_eq!(processor.pc, NEXT_PC);
 }
@@ -277,26 +279,16 @@ fn test_op_dxyn_wrap_horizontal() {
     
     print_vram(&processor.vram);
 
-    //assert_eq!(processor.vram[0][x - 1], 0); //64 - 4 - 1 = 59
-    assert_eq!((processor.vram[0] >> (x - 1)) & 1, 0);
-    //assert_eq!(processor.vram[0][x], 1);
-    assert_eq!((processor.vram[0] >> x) & 1 , 1);
-    //assert_eq!(processor.vram[0][x + 1], 1);
-    assert_eq!((processor.vram[0] >> (x + 1)) & 1, 1);
-    //assert_eq!(processor.vram[0][x + 2], 1);
-    assert_eq!((processor.vram[0] >> (x + 2)) & 1, 1);
-    //assert_eq!(processor.vram[0][x + 3], 1);
-    assert_eq!((processor.vram[0] >> (x + 3)) & 1, 1);
-    //assert_eq!(processor.vram[0][0], 1);
-    assert_eq!(processor.vram[0] & 1, 1);
-    //assert_eq!(processor.vram[0][1], 1);
-    assert_eq!((processor.vram[0] >> 1) & 1, 1);
-    //assert_eq!(processor.vram[0][2], 1);
-    assert_eq!(processor.vram[0] >> 2 & 1, 1);
-    //assert_eq!(processor.vram[0][3], 1);
-    assert_eq!(processor.vram[0] >> 3 & 1, 1);
-    //assert_eq!(processor.vram[0][4], 0);
-    assert_eq!(processor.vram[0] >> 4 & 1, 0);
+    assert_eq!(processor.vram[0][x - 1], 0);
+    assert_eq!(processor.vram[0][x], 1);
+    assert_eq!(processor.vram[0][x + 1], 1);
+    assert_eq!(processor.vram[0][x + 2], 1);
+    assert_eq!(processor.vram[0][x + 3], 1);
+    assert_eq!(processor.vram[0][0], 1);
+    assert_eq!(processor.vram[0][1], 1);
+    assert_eq!(processor.vram[0][2], 1);
+    assert_eq!(processor.vram[0][3], 1);
+    assert_eq!(processor.vram[0][4], 0);
 
     assert_eq!(processor.v[0x0f], 0);
 }
