@@ -229,6 +229,12 @@ fn test_op_cxkk() {
     assert_eq!(processor.v[0] & 0xf0, 0);
 }
 
+fn print_vram(vram: &[u64; 32]){
+    for x in 0..32 {
+        println!("{:#066b}", vram[x]);
+    }
+}
+
 // DRW Vx, Vy, nibble
 #[test]
 fn test_op_dxyn() {
@@ -236,17 +242,23 @@ fn test_op_dxyn() {
     processor.i = 0;
     processor.ram[0] = 0b11111111;
     processor.ram[1] = 0b00000000;
-    processor.vram[0][0] = 1;
-    processor.vram[0][1] = 0;
-    processor.vram[1][0] = 1;
-    processor.vram[1][1] = 0;
+    //processor.vram[0][0] = 1;
+    //processor.vram[0][1] = 0;
+    processor.vram[0] = 0b01 << 63;
+    //processor.vram[1][0] = 1;
+    //processor.vram[1][1] = 0;
+    processor.vram[1] = 0b01 << 63;
     processor.v[0] = 0;
     processor.run_opcode(0xd002);
-
-    assert_eq!(processor.vram[0][0], 0);
-    assert_eq!(processor.vram[0][1], 1);
-    assert_eq!(processor.vram[1][0], 1);
-    assert_eq!(processor.vram[1][1], 0);
+    print_vram(&processor.vram);
+    //assert_eq!(processor.vram[0][0], 0);
+    assert_eq!(processor.vram[0] >> 63 & 1, 0);
+    //assert_eq!(processor.vram[0][1], 1);
+    assert_eq!((processor.vram[0] >> 62) & 1, 1);
+    //assert_eq!(processor.vram[1][0], 1);
+    assert_eq!(processor.vram[1] >> 63 & 1, 1);
+    //assert_eq!(processor.vram[1][1], 0);
+    assert_eq!((processor.vram[1] >> 62) & 1, 0);
     assert_eq!(processor.v[0x0f], 1);
     assert!(processor.vram_changed);
     assert_eq!(processor.pc, NEXT_PC);
@@ -264,6 +276,8 @@ fn test_op_dxyn_wrap_horizontal() {
     processor.v[0] = x as u8;
     processor.v[1] = 0;
     processor.run_opcode(0xd011);
+    
+    print_vram(&processor.vram);
 
     assert_eq!(processor.vram[0][x - 1], 0);
     assert_eq!(processor.vram[0][x], 1);
@@ -291,9 +305,13 @@ fn test_op_dxyn_wrap_vertical() {
     processor.v[0] = 0;
     processor.v[1] = y as u8;
     processor.run_opcode(0xd012);
+    
+    print_vram(&processor.vram);
 
-    assert_eq!(processor.vram[y][0], 1);
-    assert_eq!(processor.vram[0][0], 1);
+    //assert_eq!(processor.vram[y][0], 1);
+    assert_eq!(processor.vram[y] >> 63 & 1, 1);
+    //assert_eq!(processor.vram[0][0], 1);
+    assert_eq!(processor.vram[0] >> 63 & 1, 1);
     assert_eq!(processor.v[0x0f], 0);
 }
 

@@ -52,6 +52,7 @@ fn main() {
             display_driver.draw(&output.vram);
             processor.vram_changed = false;
         }
+        
 
         //buffer of opcodes per 60hz, set it to where it feels right, around 10-15
         if opcode_count >=15 {
