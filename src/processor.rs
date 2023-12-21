@@ -12,7 +12,7 @@ use CHIP8_RAM;
 const OPCODE_SIZE: usize = 2;
 
 pub struct OutputState<'a> {
-    pub vram: &'a [[u8; CHIP8_WIDTH];CHIP8_HEIGHT],
+    pub vram: &'a [u64; CHIP8_HEIGHT],
     pub vram_changed: bool,
     pub beep: bool,
 }
@@ -36,7 +36,7 @@ impl ProgramCounter {
 }
 
 pub struct Processor {
-    vram: [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
+    vram: [u64; CHIP8_HEIGHT],
     pub vram_changed: bool,
     ram: [u8; CHIP8_RAM],
     stack: [usize; 16],
@@ -60,7 +60,7 @@ impl Processor {
         }
 
         Processor {
-            vram: [[0; CHIP8_WIDTH];CHIP8_HEIGHT],
+            vram: [0; CHIP8_HEIGHT],
             vram_changed: false,
             ram: ram,
             stack: [0; 16],
@@ -184,11 +184,7 @@ impl Processor {
 
     // CLS: Clear the display.
     fn op_00e0(&mut self) -> ProgramCounter {
-        for y in 0..CHIP8_HEIGHT {
-            for x in 0..CHIP8_WIDTH{
-                self.vram[y][x] = 0;
-            }
-        }
+        self.vram = [0; CHIP8_HEIGHT];
         self.vram_changed = true;
         ProgramCounter::Next
 
