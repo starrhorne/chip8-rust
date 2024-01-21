@@ -1,7 +1,10 @@
 use rand;
 use rand::Rng;
 use font::FONT_SET;
-
+/*
+    the simplest, most straightforward way to implement display wait is, when a DXYN occurs, check if the instruction is the first one that occurred on a frame. If it is, allow DXYN to run normally. If not, break the loop so that it will restart at the next frame instead (doesn't increment PC)
+currently there isnt any
+*/
 use CHIP8_HEIGHT;
 use CHIP8_WIDTH;
 use CHIP8_RAM;
@@ -9,12 +12,14 @@ use CHIP8_RAM;
 const OPCODE_SIZE: usize = 2;
 
 pub struct OutputState<'a> {
-    pub vram: &'a [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
+    pub vram: &'a [u64; CHIP8_HEIGHT],
     pub vram_changed: bool,
     pub beep: bool,
 }
 
 enum ProgramCounter {
+    Unknown(u16),
+    //Stay,
     Next,
     Skip,
     Jump(usize),
@@ -31,19 +36,19 @@ impl ProgramCounter {
 }
 
 pub struct Processor {
-    vram: [[u8; CHIP8_WIDTH]; CHIP8_HEIGHT],
-    vram_changed: bool,
+    vram: [u64; CHIP8_HEIGHT],
+    pub vram_changed: bool,
     ram: [u8; CHIP8_RAM],
     stack: [usize; 16],
     v: [u8; 16],
     i: usize,
     pc: usize,
     sp: usize,
-    delay_timer: u8,
-    sound_timer: u8,
-    keypad: [bool; 16],
-    keypad_waiting: bool,
-    keypad_register: usize,
+    pub delay_timer: u8,
+    pub sound_timer: u8,
+    keypad: u16,
+    keypad_wait: bool,
+    keypad_wait_register: usize,
 }
 
 impl Processor {
@@ -55,7 +60,7 @@ impl Processor {
         }
 
         Processor {
-            vram: [[0; CHIP8_WIDTH]; CHIP8_HEIGHT],
+            vram: [0; CHIP8_HEIGHT],
             vram_changed: false,
             ram: ram,
             stack: [0; 16],
@@ -65,9 +70,9 @@ impl Processor {
             sp: 0,
             delay_timer: 0,
             sound_timer: 0,
-            keypad: [false; 16],
-            keypad_waiting: false,
-            keypad_register: 0,
+            keypad: 0,
+            keypad_wait: false,
+            keypad_wait_register: 0,
         }
     }
 
@@ -81,28 +86,23 @@ impl Processor {
             }
         }
     }
-
-    pub fn tick(&mut self, keypad: [bool; 16]) -> OutputState {
+    
+    pub fn tick(&mut self, keypad: u16) -> OutputState {
+        //self.vram_changed = false;
         self.keypad = keypad;
-        self.vram_changed = false;
 
-        if self.keypad_waiting {
-            for i in 0..keypad.len() {
-                if keypad[i] {
-                    self.keypad_waiting = false;
-                    self.v[self.keypad_register] = i as u8;
-                    break;
-                }
+        if self.keypad_wait {
+            if self.keypad > 0{
+                /*
+                      fedc ba98 7654 3210
+                    0b0000 0000 0000 0000
+                */
+                self.keypad_wait = false;
+                self.v[self.keypad_wait_register] = self.keypad.trailing_zeros() as u8;
             }
-        } else {
-            if self.delay_timer > 0 {
-                self.delay_timer -= 1
-            }
-            if self.sound_timer > 0 {
-                self.sound_timer -= 1
-            }
-            let opcode = self.get_opcode();
-            self.run_opcode(opcode);
+        }
+        else {
+            self.run_opcode(self.get_opcode());
         }
 
         OutputState {
@@ -164,10 +164,15 @@ impl Processor {
             (0x0f, _, 0x03, 0x03) => self.op_fx33(x),
             (0x0f, _, 0x05, 0x05) => self.op_fx55(x),
             (0x0f, _, 0x06, 0x05) => self.op_fx65(x),
-            _ => ProgramCounter::Next,
+            _ => ProgramCounter::Unknown(opcode),
         };
 
         match pc_change {
+            ProgramCounter::Unknown(opcode) => {
+                println!("ERROR: OPCODE {:#06x} UNKNOWN",opcode);
+                self.pc += OPCODE_SIZE;
+            },
+            //ProgramCounter::Stay => (),
             ProgramCounter::Next => self.pc += OPCODE_SIZE,
             ProgramCounter::Skip => self.pc += 2 * OPCODE_SIZE,
             ProgramCounter::Jump(addr) => self.pc = addr,
@@ -179,11 +184,7 @@ impl Processor {
 
     // CLS: Clear the display.
     fn op_00e0(&mut self) -> ProgramCounter {
-        for y in 0..CHIP8_HEIGHT {
-            for x in 0..CHIP8_WIDTH {
-                self.vram[y][x] = 0;
-            }
-        }
+        self.vram = [0; CHIP8_HEIGHT];
         self.vram_changed = true;
         ProgramCounter::Next
 
@@ -277,32 +278,36 @@ impl Processor {
     // SUB Vx, Vy
     // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
     fn op_8xy5(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[x] > self.v[y] { 1 } else { 0 };
+        let temp = if self.v[x] >= self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[x].wrapping_sub(self.v[y]);
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SHR Vx {, Vy}
     // If the least-significant bit of Vx is 1, then VF is set to 1,
     // otherwise 0. Then Vx is divided by 2.
     fn op_8x06(&mut self, x: usize) -> ProgramCounter {
-        self.v[0x0f] = self.v[x] & 1;
+        let temp = self.v[x] & 1;
         self.v[x] >>= 1;
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SUBN Vx, Vy
     // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted
     // from Vy, and the results stored in Vx.
     fn op_8xy7(&mut self, x: usize, y: usize) -> ProgramCounter {
-        self.v[0x0f] = if self.v[y] > self.v[x] { 1 } else { 0 };
+        let temp = if self.v[y] >= self.v[x] { 1 } else { 0 };
         self.v[x] = self.v[y].wrapping_sub(self.v[x]);
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SHL Vx {, Vy}
     // If the most-significant bit of Vx is 1, then VF is set to 1,
     // otherwise to 0. Then Vx is multiplied by 2.
     fn op_8x0e(&mut self, x: usize) -> ProgramCounter {
-        self.v[0x0f] = (self.v[x] & 0b10000000) >> 7;
+        let temp = self.v[x]  >> 7;
         self.v[x] <<= 1;
+        self.v[0xf] = temp;
         ProgramCounter::Next
     }
     // SNE Vx, Vy
@@ -337,32 +342,58 @@ impl Processor {
     // it is set to 0. If the sprite is positioned so part of it is outside
     // the coordinates of the display, it wraps around to the opposite side
     // of the screen.
+
+    /*
+                                                        
+                                                        0b1_0110_010
+        0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
+
+     */
+    /*
+        0x1110_1010_0000
+        0x0011_0101_0010 AND
+        0x0010_0000_0000
+    */
+    
+    /*
+        0x0000_1100_0101
+        0x0000_
+    */
+
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> ProgramCounter {
         self.v[0x0f] = 0;
         for byte in 0..n {
             let y = (self.v[y] as usize + byte) % CHIP8_HEIGHT;
-            for bit in 0..8 {
-                let x = (self.v[x] as usize + bit) % CHIP8_WIDTH;
-                let color = (self.ram[self.i + byte] >> (7 - bit)) & 1;
-                self.v[0x0f] |= color & self.vram[y][x];
-                self.vram[y][x] ^= color;
-
+            let x = self.v[x] as usize % CHIP8_WIDTH;
+            
+            let mut mask = self.ram[self.i + byte] as u64;
+           
+            if x + 8 > CHIP8_WIDTH {
+                let tmp = mask >>  (x - 56);
+                mask <<= 56 + ((x + 8) % CHIP8_WIDTH as usize);
+                mask |= tmp;
             }
+            else {
+                mask = mask << (56 - x);
+            }
+            self.v[0xf] |= if self.vram[y] & mask > 0 { 1 } else { 0 };
+            self.vram[y] = self.vram[y] ^ mask;               
         }
         self.vram_changed = true;
         ProgramCounter::Next
     }
     // SKP Vx
+    // SKP Vx
     // Skip next instruction if key with the value of Vx is pressed.
     fn op_ex9e(&mut self, x: usize) -> ProgramCounter {
-        ProgramCounter::skip_if(self.keypad[self.v[x] as usize])
+        ProgramCounter::skip_if((self.keypad >> self.v[x]) & 0x1 == 1)
     }
     // SKNP Vx
     // Skip next instruction if key with the value of Vx is NOT pressed.
     fn op_exa1(&mut self, x: usize) -> ProgramCounter {
-        ProgramCounter::skip_if(!self.keypad[self.v[x] as usize])
+        ProgramCounter::skip_if((self.keypad >>  self.v[x]) & 0x1 == 0)
     }
-    // LD Vx, DT
+    // LD Vx, sDT
     // Set Vx = delay timer value.
     fn op_fx07(&mut self, x: usize) -> ProgramCounter {
         self.v[x] = self.delay_timer;
@@ -370,9 +401,17 @@ impl Processor {
     }
     // LD Vx, K
     // Wait for a key press, store the value of the key in Vx.
+    
+    /*
+          8421 8421
+        0b0011_0101
+        0b1100_1010
+        0b0110_0101
+    */
+
     fn op_fx0a(&mut self, x: usize) -> ProgramCounter {
-        self.keypad_waiting = true;
-        self.keypad_register = x;
+        self.keypad_wait = true;
+        self.keypad_wait_register = x;
         ProgramCounter::Next
     }
     // LD DT, Vx

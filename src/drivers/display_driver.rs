@@ -38,26 +38,28 @@ impl DisplayDriver {
         DisplayDriver { canvas: canvas }
     }
 
-    pub fn draw(&mut self, pixels: &[[u8; CHIP8_WIDTH]; CHIP8_HEIGHT]) {
-        for (y, row) in pixels.iter().enumerate() {
-            for (x, &col) in row.iter().enumerate() {
-                let x = (x as u32) * SCALE_FACTOR;
-                let y = (y as u32) * SCALE_FACTOR;
+    pub fn draw(&mut self, pixels: &[u64; CHIP8_HEIGHT]) {
+        
+        for y in 0usize..CHIP8_HEIGHT {
+            for x in 0usize..CHIP8_WIDTH {
+                let _x = (x as u32) * SCALE_FACTOR;
+                let _y = (y as u32) * SCALE_FACTOR;
 
-                self.canvas.set_draw_color(color(col));
+                self.canvas.set_draw_color( color( (pixels[y] >> (63 - x) ) & 1 ));
+
                 let _ = self.canvas
-                    .fill_rect(Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR));
+                    .fill_rect( Rect::new( _x as i32, _y as i32, SCALE_FACTOR, SCALE_FACTOR ) );
             }
         }
         self.canvas.present();
     }
 }
 
-fn color(value: u8) -> pixels::Color {
+fn color(value: u64) -> pixels::Color {
     if value == 0 {
-        pixels::Color::RGB(0, 0, 0)
+        pixels::Color::RGB(0, 0,100)
     } else {
-        pixels::Color::RGB(0, 250, 0)
+        pixels::Color::RGB(0, 150, 0)
     }
 }
 
